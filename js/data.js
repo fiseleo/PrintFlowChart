@@ -48,6 +48,17 @@ const VALVES = [
       { id: 'pc',         label: '電腦',       symbol: '<rect x="28" y="6" width="64" height="34" rx="3" fill="#e1f5fe" stroke="#0277bd" stroke-width="3"/><line x1="60" y1="40" x2="60" y2="48" stroke="#0277bd" stroke-width="3"/><line x1="44" y1="48" x2="76" y2="48" stroke="#0277bd" stroke-width="3"/>' }
     ];
 
+    const SWAGELOK = [
+      { id: 'bellows',    label: '波紋管密封閥', symbol: '<circle cx="60" cy="30" r="14" fill="none" stroke="#c62828" stroke-width="3"/><line x1="46" y1="30" x2="74" y2="30" stroke="#c62828" stroke-width="3"/><polyline points="60,2 54,7 66,7 54,12 66,12 60,16" fill="none" stroke="#c62828" stroke-width="2"/>' },
+      { id: 'metering',   label: '計量閥',       symbol: '<circle cx="60" cy="8" r="7" fill="none" stroke="#c62828" stroke-width="2.5"/><line x1="60" y1="15" x2="60" y2="20" stroke="#c62828" stroke-width="2.5"/><polygon points="60,20 82,42 38,42" fill="#ffcdd2" stroke="#c62828" stroke-width="3"/><line x1="60" y1="42" x2="60" y2="50" stroke="#c62828" stroke-width="3"/>' },
+      { id: 'proprelief', label: '比例洩壓閥',   symbol: '<line x1="16" y1="44" x2="104" y2="44" stroke="#c62828" stroke-width="3"/><polyline points="60,12 44,24 76,24 44,36 76,36 60,44" fill="none" stroke="#c62828" stroke-width="3"/><line x1="60" y1="2" x2="60" y2="12" stroke="#c62828" stroke-width="3"/><polygon points="54,3 66,3 60,11" fill="#c62828"/>' },
+      { id: 'pnball',     label: '氣動球閥',     symbol: '<polygon points="2,18 52,30 2,42" fill="#ffcdd2" stroke="#c62828" stroke-width="3"/><polygon points="118,18 68,30 118,42" fill="#ffcdd2" stroke="#c62828" stroke-width="3"/><circle cx="60" cy="30" r="8" fill="#ffcdd2" stroke="#c62828" stroke-width="3"/><line x1="60" y1="14" x2="60" y2="22" stroke="#c62828" stroke-width="3"/><rect x="50" y="2" width="20" height="12" fill="none" stroke="#c62828" stroke-width="3"/>' },
+      { id: 'bleed',      label: '洩放閥',       symbol: '<circle cx="42" cy="26" r="14" fill="none" stroke="#c62828" stroke-width="3"/><line x1="28" y1="26" x2="56" y2="26" stroke="#c62828" stroke-width="3"/><line x1="56" y1="26" x2="100" y2="26" stroke="#c62828" stroke-width="3"/><line x1="42" y1="26" x2="42" y2="48" stroke="#c62828" stroke-width="3"/>' },
+      { id: 'ball3l',     label: '三通球閥 L型', in: 1, out: 2, symbol: '<circle cx="60" cy="28" r="16" fill="none" stroke="#c62828" stroke-width="3"/><path d="M52,22 L52,34 L68,34" fill="none" stroke="#c62828" stroke-width="2.5"/><line x1="60" y1="2" x2="60" y2="12" stroke="#c62828" stroke-width="3"/><line x1="12" y1="28" x2="44" y2="28" stroke="#c62828" stroke-width="3"/><line x1="76" y1="28" x2="108" y2="28" stroke="#c62828" stroke-width="3"/>' },
+      { id: 'ball3t',     label: '三通球閥 T型', in: 1, out: 2, symbol: '<circle cx="60" cy="28" r="16" fill="none" stroke="#c62828" stroke-width="3"/><path d="M60,20 L60,36 M52,28 L68,28" fill="none" stroke="#c62828" stroke-width="2.5"/><line x1="60" y1="2" x2="60" y2="12" stroke="#c62828" stroke-width="3"/><line x1="12" y1="28" x2="44" y2="28" stroke="#c62828" stroke-width="3"/><line x1="76" y1="28" x2="108" y2="28" stroke="#c62828" stroke-width="3"/>' },
+      { id: 'ball4way',   label: '四通球閥',     in: 2, out: 2, symbol: '<circle cx="60" cy="28" r="16" fill="none" stroke="#c62828" stroke-width="3"/><path d="M60,20 L60,36 M52,28 L68,28" fill="none" stroke="#c62828" stroke-width="2.5"/><line x1="60" y1="2" x2="60" y2="12" stroke="#c62828" stroke-width="3"/><line x1="60" y1="44" x2="60" y2="50" stroke="#c62828" stroke-width="3"/><line x1="12" y1="28" x2="44" y2="28" stroke="#c62828" stroke-width="3"/><line x1="76" y1="28" x2="108" y2="28" stroke="#c62828" stroke-width="3"/>' }
+    ];
+
     const NODE_TYPES = {
       start:      { label: '開始',       cls: 'terminator', in: 0, out: 1 },
       io:         { label: '輸入 / 輸出', cls: 'io',         in: 1, out: 1 },
@@ -60,7 +71,7 @@ const VALVES = [
       note:       { label: '',           cls: 'note',       in: 0, out: 0, ph: '輸入註解…' },
       end:        { label: '結束',       cls: 'terminator', in: 1, out: 0 }
     };
-    VALVES.concat(EQUIPMENT).concat(ROCKET).concat(DAQ).forEach(function (v) {
+    VALVES.concat(EQUIPMENT).concat(ROCKET).concat(DAQ).concat(SWAGELOK).forEach(function (v) {
       NODE_TYPES[v.id] = { label: v.label, cls: 'sym', in: (v.in == null ? 1 : v.in), out: (v.out == null ? 1 : v.out), symbol: v.symbol };
     });
     const CATEGORIES = [
@@ -70,6 +81,7 @@ const VALVES = [
       { name: '設備', items: EQUIPMENT.map(function (v) { return v.id; }) },
       { name: '火箭', items: ROCKET.map(function (v) { return v.id; }) },
       { name: 'DAQ 系統', items: DAQ.map(function (v) { return v.id; }) },
+      { name: 'Swagelok 閥件', items: SWAGELOK.map(function (v) { return v.id; }) },
       { name: '註解', items: ['note'] }
     ];
   return { VALVES, EQUIPMENT, ROCKET, DAQ, NODE_TYPES, CATEGORIES };
