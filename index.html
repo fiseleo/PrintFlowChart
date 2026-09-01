@@ -63,6 +63,11 @@
   .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   .btn.primary:hover { background: #1d4ed8; }
   .zoom-label { min-width: 44px; text-align: center; font-variant-numeric: tabular-nums; }
+  .btn.active { background: #e0edff; border-color: var(--accent); }
+  .swatches { display: inline-flex; align-items: center; gap: 4px; padding: 0 2px; }
+  .swatch { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #e2e8f0; cursor: pointer; padding: 0; }
+  .swatch:hover { border-color: #94a3b8; }
+  .swatch.reset { background: repeating-linear-gradient(45deg, #fff, #fff 3px, #cbd5e1 3px, #cbd5e1 6px); }
 
   /* ---------- Layout ---------- */
   .main { flex: 1; display: flex; min-height: 0; }
@@ -123,6 +128,7 @@
   .mini-svg { width: 34px; height: 17px; margin-right: 9px; flex: 0 0 auto; }
   .mini.predefined { background: #b0bec5; border-left: 3px solid #546e7a; border-right: 3px solid #546e7a; border-radius: 2px; }
   .mini.connector { border-radius: 50%; width: 20px; height: 20px; background: #ffe082; }
+  .mini.note { background: #fef08a; border: 1px dashed #ca8a04; border-radius: 2px; width: 22px; height: 18px; }
 
   /* ---------- Drawflow overrides ---------- */
   .parent-drawflow {
@@ -160,11 +166,11 @@
     font-size: 14px;
     text-align: center;
   }
-  .shape.terminator  { background: #e8f5e9; border-radius: 30px; color: #1b5e20; }
-  .shape.process     { background: #e3f2fd; border-radius: 6px;  color: #0d47a1; }
-  .shape.database    { background: #e0f7fa; border-radius: 0 0 50% 50% / 0 0 26% 26%; color: #004d40; padding-bottom: 22px; }
-  .shape.predefined  { background: #eceff1; border-left: 6px solid #546e7a; border-right: 6px solid #546e7a; color: #263238; border-radius: 4px; }
-  .shape.connector   { background: #fffde7; border-radius: 50%; color: #f57f17; min-width: 76px; min-height: 76px; }
+  .shape.terminator  { background: var(--fill, #e8f5e9); border-radius: 30px; color: #1b5e20; }
+  .shape.process     { background: var(--fill, #e3f2fd); border-radius: 6px;  color: #0d47a1; }
+  .shape.database    { background: var(--fill, #e0f7fa); border-radius: 0 0 50% 50% / 0 0 26% 26%; color: #004d40; padding-bottom: 22px; }
+  .shape.predefined  { background: var(--fill, #eceff1); border-left: 6px solid #546e7a; border-right: 6px solid #546e7a; color: #263238; border-radius: 4px; }
+  .shape.connector   { background: var(--fill, #fffde7); border-radius: 50%; color: #f57f17; min-width: 76px; min-height: 76px; }
   .shape.decision    { color: #e65100; min-width: 120px; min-height: 84px; }
   .shape.io          { color: #4a148c; padding-left: 28px; padding-right: 28px; }
   .shape.document    { color: #b71c1c; padding-bottom: 28px; }
@@ -172,11 +178,22 @@
   .shape.decision::before, .shape.io::before, .shape.document::before {
     content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 0;
   }
-  .shape.decision::before { background: #fff3e0; clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
-  .shape.io::before       { background: #f3e5f5; clip-path: polygon(14% 0,100% 0,86% 100%,0 100%); }
-  .shape.document::before { background: #ffebee; clip-path: polygon(0 0,100% 0,100% 80%,50% 100%,0 80%); }
-  .shape.valve       { background: #fffde7; border-radius: 8px; color: #8d6e00; flex-direction: column; gap: 5px; min-height: 74px; }
-  .valve-symbol      { width: 92px; height: 42px; flex: 0 0 auto; }
+  .shape.decision::before { background: var(--fill, #fff3e0); clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
+  .shape.io::before       { background: var(--fill, #f3e5f5); clip-path: polygon(14% 0,100% 0,86% 100%,0 100%); }
+  .shape.document::before { background: var(--fill, #ffebee); clip-path: polygon(0 0,100% 0,100% 80%,50% 100%,0 80%); }
+  .shape.sym         { position: relative; background: var(--fill, #f8fafc); border: 1px solid #e2e8f0; border-radius: 8px; color: #334155; min-height: 66px; }
+  .sym-icon          { width: 104px; height: 50px; flex: 0 0 auto; }
+  .shape.sym .node-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, .92);
+    padding: 1px 8px;
+    border-radius: 999px;
+  }
+  .shape.note        { background: var(--fill, #fefce8); border: 1px dashed #eab308; border-radius: 6px; color: #854d0e; min-width: 120px; min-height: 56px; padding: 10px 12px; align-items: flex-start; justify-content: flex-start; }
+  .shape.note .node-label { text-align: left; min-width: 80px; }
 
   .node-label {
     position: relative;
@@ -210,6 +227,11 @@
   .drawflow .connection .main-path.selected { stroke: var(--accent); }
   .drawflow .connection .point { cursor: move; stroke: #334155; stroke-width: 1.5; fill: #fff; }
   .drawflow .connection .point:hover, .drawflow .connection .point.selected { fill: var(--accent); }
+  .drawflow .connection .edge-label {
+    fill: #334155; font-size: 12px; text-anchor: middle; dominant-baseline: middle;
+    paint-order: stroke; stroke: #fff; stroke-width: 4px; stroke-linejoin: round;
+    cursor: pointer; pointer-events: all;
+  }
 
   .drawflow-delete {
     background: #dc2626;
@@ -243,11 +265,14 @@
     <button class="btn" id="btnImportJson" title="從 JSON 檔匯入">📤 匯入 JSON</button>
     <span class="sep"></span>
     <button class="btn" id="btnClear" title="清空畫布">🗑 清空</button>
+    <button class="btn active" id="btnSnap" title="網格吸附與對齊（開/關）">🧲 吸附</button>
     <span class="sep"></span>
     <button class="btn" id="btnZoomOut" title="縮小">−</button>
     <span class="zoom-label" id="zoomLabel">100%</span>
     <button class="btn" id="btnZoomIn" title="放大">＋</button>
     <button class="btn" id="btnZoomReset" title="回復 100%">重置</button>
+    <span class="sep"></span>
+    <span class="swatches" id="swatches" title="先點選節點，再點顏色變更其底色"></span>
   </header>
 
   <div class="main">
@@ -295,6 +320,13 @@
       { id: 'needle',    label: '針閥',   symbol: '<polygon points="60,4 84,40 36,40" fill="#ffca28" stroke="#f9a825" stroke-width="3"/><line x1="60" y1="40" x2="60" y2="50" stroke="#f9a825" stroke-width="3"/>' }
     ];
 
+    const EQUIPMENT = [
+      { id: 'pump',   label: '泵浦',   symbol: '<circle cx="60" cy="26" r="22" fill="none" stroke="#1565c0" stroke-width="3"/><polygon points="50,14 78,26 50,38" fill="#1565c0"/>' },
+      { id: 'tank',   label: '儲槽',   symbol: '<ellipse cx="60" cy="9" rx="38" ry="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="3"/><rect x="22" y="9" width="76" height="36" fill="#e3f2fd" stroke="#1565c0" stroke-width="3"/>' },
+      { id: 'sensor', label: '感測器', symbol: '<circle cx="60" cy="22" r="18" fill="none" stroke="#00695c" stroke-width="3"/><line x1="42" y1="22" x2="78" y2="22" stroke="#00695c" stroke-width="3"/><line x1="60" y1="40" x2="60" y2="48" stroke="#00695c" stroke-width="3"/>' },
+      { id: 'motor',  label: '馬達',   symbol: '<circle cx="60" cy="26" r="22" fill="none" stroke="#6a1b9a" stroke-width="3"/><text x="60" y="32" text-anchor="middle" font-size="20" font-weight="700" fill="#6a1b9a">M</text>' }
+    ];
+
     const NODE_TYPES = {
       start:      { label: '開始',       cls: 'terminator', in: 0, out: 1 },
       io:         { label: '輸入 / 輸出', cls: 'io',         in: 1, out: 1 },
@@ -304,14 +336,15 @@
       database:   { label: '資料庫',     cls: 'database',   in: 1, out: 1 },
       predefined: { label: '子程序',     cls: 'predefined', in: 1, out: 1 },
       connector:  { label: 'A',          cls: 'connector',  in: 1, out: 1 },
+      note:       { label: '',           cls: 'note',       in: 0, out: 0, ph: '輸入註解…' },
       end:        { label: '結束',       cls: 'terminator', in: 1, out: 0 }
     };
-    VALVES.forEach(function (v) {
-      NODE_TYPES[v.id] = { label: v.label, cls: 'valve', in: 1, out: 1, symbol: v.symbol };
+    VALVES.concat(EQUIPMENT).forEach(function (v) {
+      NODE_TYPES[v.id] = { label: v.label, cls: 'sym', in: 1, out: 1, symbol: v.symbol };
     });
     const PALETTE_ORDER = ['start','io','process','decision','document','database']
-      .concat(VALVES.map(function (v) { return v.id; }))
-      .concat(['predefined','connector','end']);
+      .concat(VALVES.concat(EQUIPMENT).map(function (v) { return v.id; }))
+      .concat(['predefined','connector','note','end']);
 
     const canvas = document.getElementById('drawflow');
     const editor = new Drawflow(canvas);
@@ -325,13 +358,14 @@
     function nodeHtml(type, label) {
       const t = NODE_TYPES[type];
       const cls = t.cls;
+      const ph = t.ph || '輸入文字';
       if (t.symbol) {
-        return '<div class="shape valve">' +
-          '<svg class="valve-symbol" viewBox="0 0 120 52" aria-hidden="true">' + t.symbol + '</svg>' +
-          '<span class="node-label" contenteditable="true" df-label data-ph="輸入文字">' + label + '</span>' +
+        return '<div class="shape sym">' +
+          '<svg class="sym-icon" viewBox="0 0 120 52" aria-hidden="true">' + t.symbol + '</svg>' +
+          '<span class="node-label" contenteditable="true" df-label data-ph="' + ph + '">' + label + '</span>' +
         '</div>';
       }
-      return '<div class="shape ' + cls + '"><span class="node-label" contenteditable="true" df-label data-ph="輸入文字">' + label + '</span></div>';
+      return '<div class="shape ' + cls + '"><span class="node-label" contenteditable="true" df-label data-ph="' + ph + '">' + label + '</span></div>';
     }
 
     function createNode(type, x, y, labelOverride) {
@@ -423,6 +457,7 @@
       applying = true;
       editor.import(JSON.parse(history[history.length - 1]));
       applying = false;
+      afterLoad();
       updateUndoButtons();
     }
 
@@ -433,6 +468,7 @@
       applying = true;
       editor.import(JSON.parse(s));
       applying = false;
+      afterLoad();
       updateUndoButtons();
     }
 
@@ -446,17 +482,131 @@
       return function () { clearTimeout(t); t = setTimeout(fn, ms); };
     }
 
+    // ---------- Snap / alignment ----------
+    const GRID = 20;
+    let snapEnabled = true;
+    function snapNode(id) {
+      if (!snapEnabled) return;
+      const data = editor.drawflow.drawflow[editor.module].data[id];
+      if (!data) return;
+      let nx = Math.round(data.pos_x / GRID) * GRID;
+      let ny = Math.round(data.pos_y / GRID) * GRID;
+      const threshold = 8;
+      for (const oid in editor.drawflow.drawflow[editor.module].data) {
+        if (oid === String(id)) continue;
+        const o = editor.drawflow.drawflow[editor.module].data[oid];
+        if (Math.abs(o.pos_x - nx) < threshold) nx = o.pos_x;
+        if (Math.abs(o.pos_y - ny) < threshold) ny = o.pos_y;
+      }
+      if (nx !== data.pos_x || ny !== data.pos_y) {
+        data.pos_x = nx; data.pos_y = ny;
+        const el = editor.container.querySelector('#node-' + id);
+        if (el) { el.style.left = nx + 'px'; el.style.top = ny + 'px'; }
+        editor.updateConnectionNodes('node-' + id);
+      }
+    }
+
+    // ---------- Edge labels ----------
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    function refreshEdgeLabels() {
+      const data = editor.drawflow.drawflow[editor.module].data;
+      for (const nid in data) {
+        const node = data[nid];
+        for (const oc in node.outputs) {
+          (node.outputs[oc].connections || []).forEach(function (conn) {
+            const svg = editor.container.querySelector('.connection.node_in_node-' + conn.node + '.node_out_node-' + nid + '.' + oc + '.' + conn.output);
+            if (!svg) return;
+            const path = svg.querySelector('.main-path');
+            let lbl = svg.querySelector('.edge-label');
+            if (conn.label) {
+              if (!lbl) {
+                lbl = document.createElementNS(SVG_NS, 'text');
+                lbl.classList.add('edge-label');
+                lbl.setAttribute('data-out', nid);
+                lbl.setAttribute('data-in', conn.node);
+                lbl.setAttribute('data-oc', oc);
+                lbl.setAttribute('data-ic', conn.output);
+                svg.appendChild(lbl);
+              }
+              const mid = path.getPointAtLength(path.getTotalLength() / 2);
+              lbl.setAttribute('x', mid.x);
+              lbl.setAttribute('y', mid.y);
+              lbl.textContent = conn.label;
+            } else if (lbl) { lbl.remove(); }
+          });
+        }
+      }
+    }
+
+    // ---------- Custom color ----------
+    const COLOR_PALETTE = ['#e3f2fd','#e8f5e9','#fff3e0','#f3e5f5','#ffebee','#e0f7fa','#fffde7','#eceff1','#fce4ec','#e8eaf6'];
+    let selectedNodeId = null;
+    function applyNodeColor(id, color) {
+      const node = editor.container.querySelector('#node-' + id);
+      if (node) {
+        const shape = node.querySelector('.shape');
+        if (shape) { if (color) shape.style.setProperty('--fill', color); else shape.style.removeProperty('--fill'); }
+      }
+      const data = editor.drawflow.drawflow[editor.module].data[id];
+      if (data) { if (color) data.data.color = color; else delete data.data.color; }
+    }
+    function refreshColors() {
+      const data = editor.drawflow.drawflow[editor.module].data;
+      for (const id in data) {
+        const node = editor.container.querySelector('#node-' + id);
+        if (!node) continue;
+        const shape = node.querySelector('.shape');
+        if (!shape) continue;
+        const color = data[id].data && data[id].data.color;
+        if (color) shape.style.setProperty('--fill', color); else shape.style.removeProperty('--fill');
+      }
+    }
+    function afterLoad() { refreshColors(); refreshEdgeLabels(); }
+
     // ---------- Persistence ----------
     const LS_KEY = 'flowchart-editor-v1';
     function save() { try { localStorage.setItem(LS_KEY, JSON.stringify(editor.export())); } catch (e) {} }
     function loadSaved() { try { return localStorage.getItem(LS_KEY); } catch (e) { return null; } }
     const saveDebounced = debounce(save, 500);
 
-    ['nodeCreated','nodeRemoved','connectionCreated','connectionRemoved','nodeMoved'].forEach(function (ev) {
-      editor.on(ev, function () { if (applying) return; pushHistory(); saveDebounced(); });
+    // ---------- Events ----------
+    ['nodeCreated','nodeRemoved'].forEach(function (ev) {
+      editor.on(ev, function () { if (applying) return; refreshEdgeLabels(); pushHistory(); saveDebounced(); });
     });
+    editor.on('connectionCreated', function (c) {
+      const outNode = editor.drawflow.drawflow[editor.module].data[c.output_id];
+      if (outNode && outNode.name === 'decision') {
+        const conn = (outNode.outputs[c.output_class].connections || []).find(function (x) { return x.node == c.input_id && x.output == c.input_class; });
+        if (conn) conn.label = (c.output_class === 'output_1' ? '是' : '否');
+      }
+      refreshEdgeLabels();
+      if (applying) return;
+      pushHistory(); saveDebounced();
+    });
+    editor.on('connectionRemoved', function () { if (applying) return; refreshEdgeLabels(); pushHistory(); saveDebounced(); });
+    editor.on('nodeMoved', function (id) { if (applying) return; snapNode(id); refreshEdgeLabels(); pushHistory(); saveDebounced(); });
+    editor.on('nodeSelected', function (id) { selectedNodeId = id; });
+    editor.on('nodeUnselected', function () { selectedNodeId = null; });
     editor.on('nodeDataChanged', debounce(function () { if (applying) return; pushHistory(); saveDebounced(); }, 400));
     editor.on('zoom', function (z) { document.getElementById('zoomLabel').textContent = Math.round(z * 100) + '%'; });
+
+    canvas.addEventListener('dblclick', function (e) {
+      const lbl = e.target.closest && e.target.closest('.edge-label');
+      if (!lbl) return;
+      e.stopPropagation();
+      const cur = lbl.textContent || '';
+      const val = prompt('連線標籤：', cur);
+      if (val === null) return;
+      const outId = lbl.getAttribute('data-out');
+      const data = editor.drawflow.drawflow[editor.module].data[outId];
+      if (!data) return;
+      const conn = (data.outputs[lbl.getAttribute('data-oc')].connections || []).find(function (x) { return x.node == lbl.getAttribute('data-in') && x.output == lbl.getAttribute('data-ic'); });
+      if (conn) {
+        if (val.trim() === '') delete conn.label; else conn.label = val.trim();
+        refreshEdgeLabels();
+        pushHistory(); saveDebounced();
+      }
+    });
 
     // ---------- View helpers ----------
     function resetView() {
@@ -472,6 +622,27 @@
     document.getElementById('btnZoomIn').addEventListener('click', function () { editor.zoom_in(); });
     document.getElementById('btnZoomOut').addEventListener('click', function () { editor.zoom_out(); });
     document.getElementById('btnZoomReset').addEventListener('click', function () { editor.zoom_reset(); });
+
+    const btnSnap = document.getElementById('btnSnap');
+    btnSnap.addEventListener('click', function () {
+      snapEnabled = !snapEnabled;
+      btnSnap.classList.toggle('active', snapEnabled);
+    });
+
+    const swatchesEl = document.getElementById('swatches');
+    const resetSwatch = document.createElement('span');
+    resetSwatch.className = 'swatch reset';
+    resetSwatch.title = '回復預設顏色';
+    resetSwatch.addEventListener('click', function () { if (selectedNodeId) { applyNodeColor(selectedNodeId, null); pushHistory(); saveDebounced(); } });
+    swatchesEl.appendChild(resetSwatch);
+    COLOR_PALETTE.forEach(function (c) {
+      const s = document.createElement('span');
+      s.className = 'swatch';
+      s.style.background = c;
+      s.title = c;
+      s.addEventListener('click', function () { if (selectedNodeId) { applyNodeColor(selectedNodeId, c); pushHistory(); saveDebounced(); } });
+      swatchesEl.appendChild(s);
+    });
 
     document.getElementById('btnExportJson').addEventListener('click', function () {
       const blob = new Blob([JSON.stringify(editor.export(), null, 2)], { type: 'application/json' });
@@ -495,6 +666,7 @@
           editor.import(data);
           applying = false;
           resetView();
+          afterLoad();
           history = [snapshot()];
           redoStack = [];
           updateUndoButtons();
@@ -577,6 +749,7 @@
     }
     applying = false;
     resetView();
+    afterLoad();
     history = [snapshot()];
     updateUndoButtons();
   })();
