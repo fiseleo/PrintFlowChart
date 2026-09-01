@@ -211,17 +211,9 @@
   .shape.decision::before { background: var(--fill, #fff3e0); clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
   .shape.io::before       { background: var(--fill, #f3e5f5); clip-path: polygon(14% 0,100% 0,86% 100%,0 100%); }
   .shape.document::before { background: var(--fill, #ffebee); clip-path: polygon(0 0,100% 0,100% 80%,50% 100%,0 80%); }
-  .shape.sym         { position: relative; background: var(--fill, #f8fafc); border: 1px solid #e2e8f0; border-radius: 8px; color: #334155; min-height: 66px; }
-  .sym-icon          { width: 104px; height: 50px; flex: 0 0 auto; }
-  .shape.sym .node-label {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(255, 255, 255, .92);
-    padding: 1px 8px;
-    border-radius: 999px;
-  }
+  .shape.sym         { position: relative; background: var(--fill, #f8fafc); border: 1px solid #e2e8f0; border-radius: 8px; color: #334155; flex-direction: column; gap: 4px; min-height: 74px; padding: 10px 14px; }
+  .sym-icon          { width: 96px; height: 44px; flex: 0 0 auto; }
+  .shape.sym .node-label { position: static; transform: none; background: transparent; padding: 0; border-radius: 0; }
   .shape.note        { background: var(--fill, #fefce8); border: 1px dashed #eab308; border-radius: 6px; color: #854d0e; min-width: 120px; min-height: 56px; padding: 10px 12px; align-items: flex-start; justify-content: flex-start; }
   .shape.note .node-label { text-align: left; min-width: 80px; }
 
@@ -943,9 +935,11 @@
       let inner = '';
       const t = NODE_TYPES[d.name];
       if (t && t.symbol) {
-        inner += '<svg x="' + (cx - 52) + '" y="' + (cy - 25) + '" width="104" height="50" viewBox="0 0 120 52">' + t.symbol + '</svg>';
+        inner += '<svg x="' + (cx - 48) + '" y="' + (y + 8) + '" width="96" height="44" viewBox="0 0 120 52">' + t.symbol + '</svg>';
+        inner += '<text x="' + cx + '" y="' + (y + h - 8) + '" text-anchor="middle" font-size="13" font-family="Segoe UI, sans-serif" fill="#1f2937">' + escapeXml(label) + '</text>';
+      } else {
+        inner += '<text x="' + cx + '" y="' + (cy + 4) + '" text-anchor="middle" font-size="13" font-family="Segoe UI, sans-serif" fill="#1f2937" stroke="#fff" stroke-width="3" paint-order="stroke">' + escapeXml(label) + '</text>';
       }
-      inner += '<text x="' + cx + '" y="' + (cy + 4) + '" text-anchor="middle" font-size="13" font-family="Segoe UI, sans-serif" fill="#1f2937" stroke="#fff" stroke-width="3" paint-order="stroke">' + escapeXml(label) + '</text>';
       return '<g>' + shape + inner + '</g>';
     }
     function buildSVG() {
