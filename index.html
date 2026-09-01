@@ -120,6 +120,7 @@
   .mini.io { clip-path: polygon(14% 0,100% 0,86% 100%,0 100%); background: #ce93d8; }
   .mini.document { clip-path: polygon(0 0,100% 0,100% 80%,50% 100%,0 80%); background: #ef9a9a; }
   .mini.database { border-radius: 0 0 50% 50% / 0 0 60% 60%; background: #80deea; height: 20px; }
+  .mini.valve { clip-path: polygon(0 0,50% 50%,0 100%,100% 100%,50% 50%,100% 0); background: #ffca28; width: 22px; height: 22px; }
   .mini.predefined { background: #b0bec5; border-left: 3px solid #546e7a; border-right: 3px solid #546e7a; border-radius: 2px; }
   .mini.connector { border-radius: 50%; width: 20px; height: 20px; background: #ffe082; }
 
@@ -166,6 +167,8 @@
   .shape.document    { background: #ffebee; clip-path: polygon(0 0,100% 0,100% 80%,50% 100%,0 80%); color: #b71c1c; padding-bottom: 28px; }
   .shape.database    { background: #e0f7fa; border-radius: 0 0 50% 50% / 0 0 26% 26%; color: #004d40; padding-bottom: 22px; }
   .shape.predefined  { background: #eceff1; border-left: 6px solid #546e7a; border-right: 6px solid #546e7a; color: #263238; border-radius: 4px; }
+  .shape.valve       { background: #fffde7; border-radius: 8px; color: #8d6e00; flex-direction: column; gap: 5px; min-height: 74px; }
+  .valve-symbol      { width: 92px; height: 42px; flex: 0 0 auto; }
   .shape.connector   { background: #fffde7; border-radius: 50%; color: #f57f17; min-width: 76px; min-height: 76px; }
 
   .node-label {
@@ -279,11 +282,12 @@
       decision:   { label: '決策',       cls: 'decision',   in: 1, out: 2 },
       document:   { label: '文件',       cls: 'document',   in: 1, out: 1 },
       database:   { label: '資料庫',     cls: 'database',   in: 1, out: 1 },
+      valve:      { label: '閥件',       cls: 'valve',      in: 1, out: 1 },
       predefined: { label: '子程序',     cls: 'predefined', in: 1, out: 1 },
       connector:  { label: 'A',          cls: 'connector',  in: 1, out: 1 },
       end:        { label: '結束',       cls: 'terminator', in: 1, out: 0 }
     };
-    const PALETTE_ORDER = ['start','io','process','decision','document','database','predefined','connector','end'];
+    const PALETTE_ORDER = ['start','io','process','decision','document','database','valve','predefined','connector','end'];
 
     const canvas = document.getElementById('drawflow');
     const editor = new Drawflow(canvas);
@@ -296,6 +300,16 @@
     // ---------- Node creation ----------
     function nodeHtml(type, label) {
       const cls = NODE_TYPES[type].cls;
+      if (type === 'valve') {
+        return '<div class="shape valve">' +
+          '<svg class="valve-symbol" viewBox="0 0 120 52" aria-hidden="true">' +
+            '<polygon points="2,2 60,26 2,50" fill="#ffca28" stroke="#f9a825" stroke-width="3"/>' +
+            '<polygon points="118,2 60,26 118,50" fill="#ffca28" stroke="#f9a825" stroke-width="3"/>' +
+            '<circle cx="60" cy="26" r="5" fill="#f9a825"/>' +
+          '</svg>' +
+          '<span class="node-label" contenteditable="true" df-label data-ph="輸入文字">' + label + '</span>' +
+        '</div>';
+      }
       return '<div class="shape ' + cls + '"><span class="node-label" contenteditable="true" df-label data-ph="輸入文字">' + label + '</span></div>';
     }
 
