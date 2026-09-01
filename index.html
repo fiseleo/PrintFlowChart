@@ -120,7 +120,7 @@
   .mini.io { clip-path: polygon(14% 0,100% 0,86% 100%,0 100%); background: #ce93d8; }
   .mini.document { clip-path: polygon(0 0,100% 0,100% 80%,50% 100%,0 80%); background: #ef9a9a; }
   .mini.database { border-radius: 0 0 50% 50% / 0 0 60% 60%; background: #80deea; height: 20px; }
-  .mini.valve { clip-path: polygon(0 0,50% 50%,0 100%,100% 100%,50% 50%,100% 0); background: #ffca28; width: 22px; height: 22px; }
+  .mini-svg { width: 34px; height: 17px; margin-right: 9px; flex: 0 0 auto; }
   .mini.predefined { background: #b0bec5; border-left: 3px solid #546e7a; border-right: 3px solid #546e7a; border-radius: 2px; }
   .mini.connector { border-radius: 50%; width: 20px; height: 20px; background: #ffe082; }
 
@@ -149,7 +149,7 @@
   .drawflow .drawflow-node.selected .drawflow_content_node {
     filter: drop-shadow(0 0 0 2px #2563eb) drop-shadow(0 0 0 5px rgba(37,99,235,.22));
   }
-  .drawflow .drawflow-node .shape {
+  .drawflow-node .shape {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -162,16 +162,25 @@
   }
   .shape.terminator  { background: #e8f5e9; border-radius: 30px; color: #1b5e20; }
   .shape.process     { background: #e3f2fd; border-radius: 6px;  color: #0d47a1; }
-  .shape.decision    { background: #fff3e0; clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); color: #e65100; min-width: 120px; min-height: 84px; }
-  .shape.io          { background: #f3e5f5; clip-path: polygon(14% 0,100% 0,86% 100%,0 100%); color: #4a148c; padding-left: 28px; padding-right: 28px; }
-  .shape.document    { background: #ffebee; clip-path: polygon(0 0,100% 0,100% 80%,50% 100%,0 80%); color: #b71c1c; padding-bottom: 28px; }
   .shape.database    { background: #e0f7fa; border-radius: 0 0 50% 50% / 0 0 26% 26%; color: #004d40; padding-bottom: 22px; }
   .shape.predefined  { background: #eceff1; border-left: 6px solid #546e7a; border-right: 6px solid #546e7a; color: #263238; border-radius: 4px; }
+  .shape.connector   { background: #fffde7; border-radius: 50%; color: #f57f17; min-width: 76px; min-height: 76px; }
+  .shape.decision    { color: #e65100; min-width: 120px; min-height: 84px; }
+  .shape.io          { color: #4a148c; padding-left: 28px; padding-right: 28px; }
+  .shape.document    { color: #b71c1c; padding-bottom: 28px; }
+  .shape.decision, .shape.io, .shape.document { position: relative; background: transparent; }
+  .shape.decision::before, .shape.io::before, .shape.document::before {
+    content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 0;
+  }
+  .shape.decision::before { background: #fff3e0; clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); }
+  .shape.io::before       { background: #f3e5f5; clip-path: polygon(14% 0,100% 0,86% 100%,0 100%); }
+  .shape.document::before { background: #ffebee; clip-path: polygon(0 0,100% 0,100% 80%,50% 100%,0 80%); }
   .shape.valve       { background: #fffde7; border-radius: 8px; color: #8d6e00; flex-direction: column; gap: 5px; min-height: 74px; }
   .valve-symbol      { width: 92px; height: 42px; flex: 0 0 auto; }
-  .shape.connector   { background: #fffde7; border-radius: 50%; color: #f57f17; min-width: 76px; min-height: 76px; }
 
   .node-label {
+    position: relative;
+    z-index: 1;
     outline: none;
     white-space: pre-wrap;
     text-align: center;
@@ -275,6 +284,17 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script>
   (function () {
+    const VALVES = [
+      { id: 'gate',      label: '閘閥',   symbol: '<polygon points="2,2 60,26 2,50" fill="#ffca28" stroke="#f9a825" stroke-width="3"/><polygon points="118,2 60,26 118,50" fill="#ffca28" stroke="#f9a825" stroke-width="3"/>' },
+      { id: 'globe',     label: '球形閥', symbol: '<circle cx="60" cy="26" r="22" fill="none" stroke="#f9a825" stroke-width="3"/><line x1="38" y1="26" x2="82" y2="26" stroke="#f9a825" stroke-width="3"/><line x1="60" y1="4" x2="60" y2="12" stroke="#f9a825" stroke-width="3"/>' },
+      { id: 'ball',      label: '球閥',   symbol: '<polygon points="2,2 52,26 2,50" fill="#ffca28" stroke="#f9a825" stroke-width="3"/><polygon points="118,2 68,26 118,50" fill="#ffca28" stroke="#f9a825" stroke-width="3"/><circle cx="60" cy="26" r="8" fill="#ffca28" stroke="#f9a825" stroke-width="3"/>' },
+      { id: 'butterfly', label: '蝶閥',   symbol: '<polygon points="2,2 60,26 2,50" fill="#ffca28" stroke="#f9a825" stroke-width="3"/><polygon points="118,2 60,26 118,50" fill="#ffca28" stroke="#f9a825" stroke-width="3"/><line x1="60" y1="6" x2="60" y2="46" stroke="#f9a825" stroke-width="3"/>' },
+      { id: 'check',     label: '止回閥', symbol: '<line x1="30" y1="2" x2="30" y2="50" stroke="#f9a825" stroke-width="3"/><polygon points="40,4 110,26 40,48" fill="#ffca28" stroke="#f9a825" stroke-width="3"/>' },
+      { id: 'control',   label: '控制閥', symbol: '<polygon points="2,14 60,30 2,46" fill="#ffca28" stroke="#f9a825" stroke-width="3"/><polygon points="118,14 60,30 118,46" fill="#ffca28" stroke="#f9a825" stroke-width="3"/><line x1="60" y1="2" x2="60" y2="14" stroke="#f9a825" stroke-width="3"/><circle cx="60" cy="6" r="4" fill="none" stroke="#f9a825" stroke-width="3"/>' },
+      { id: 'safety',    label: '安全閥', symbol: '<line x1="16" y1="44" x2="104" y2="44" stroke="#f9a825" stroke-width="3"/><polyline points="60,4 44,20 76,20 44,36 76,36 60,44" fill="none" stroke="#f9a825" stroke-width="3"/>' },
+      { id: 'needle',    label: '針閥',   symbol: '<polygon points="60,4 84,40 36,40" fill="#ffca28" stroke="#f9a825" stroke-width="3"/><line x1="60" y1="40" x2="60" y2="50" stroke="#f9a825" stroke-width="3"/>' }
+    ];
+
     const NODE_TYPES = {
       start:      { label: '開始',       cls: 'terminator', in: 0, out: 1 },
       io:         { label: '輸入 / 輸出', cls: 'io',         in: 1, out: 1 },
@@ -282,12 +302,16 @@
       decision:   { label: '決策',       cls: 'decision',   in: 1, out: 2 },
       document:   { label: '文件',       cls: 'document',   in: 1, out: 1 },
       database:   { label: '資料庫',     cls: 'database',   in: 1, out: 1 },
-      valve:      { label: '閥件',       cls: 'valve',      in: 1, out: 1 },
       predefined: { label: '子程序',     cls: 'predefined', in: 1, out: 1 },
       connector:  { label: 'A',          cls: 'connector',  in: 1, out: 1 },
       end:        { label: '結束',       cls: 'terminator', in: 1, out: 0 }
     };
-    const PALETTE_ORDER = ['start','io','process','decision','document','database','valve','predefined','connector','end'];
+    VALVES.forEach(function (v) {
+      NODE_TYPES[v.id] = { label: v.label, cls: 'valve', in: 1, out: 1, symbol: v.symbol };
+    });
+    const PALETTE_ORDER = ['start','io','process','decision','document','database']
+      .concat(VALVES.map(function (v) { return v.id; }))
+      .concat(['predefined','connector','end']);
 
     const canvas = document.getElementById('drawflow');
     const editor = new Drawflow(canvas);
@@ -299,14 +323,11 @@
 
     // ---------- Node creation ----------
     function nodeHtml(type, label) {
-      const cls = NODE_TYPES[type].cls;
-      if (type === 'valve') {
+      const t = NODE_TYPES[type];
+      const cls = t.cls;
+      if (t.symbol) {
         return '<div class="shape valve">' +
-          '<svg class="valve-symbol" viewBox="0 0 120 52" aria-hidden="true">' +
-            '<polygon points="2,2 60,26 2,50" fill="#ffca28" stroke="#f9a825" stroke-width="3"/>' +
-            '<polygon points="118,2 60,26 118,50" fill="#ffca28" stroke="#f9a825" stroke-width="3"/>' +
-            '<circle cx="60" cy="26" r="5" fill="#f9a825"/>' +
-          '</svg>' +
+          '<svg class="valve-symbol" viewBox="0 0 120 52" aria-hidden="true">' + t.symbol + '</svg>' +
           '<span class="node-label" contenteditable="true" df-label data-ph="輸入文字">' + label + '</span>' +
         '</div>';
       }
@@ -327,7 +348,9 @@
       item.className = 'drag-item';
       item.draggable = true;
       item.dataset.node = type;
-      item.innerHTML = '<i class="mini ' + t.cls + '"></i><span>' + t.label + '</span>';
+      item.innerHTML = t.symbol
+        ? '<svg class="mini-svg" viewBox="0 0 120 52" aria-hidden="true">' + t.symbol + '</svg><span>' + t.label + '</span>'
+        : '<i class="mini ' + t.cls + '"></i><span>' + t.label + '</span>';
       item.addEventListener('dragstart', function (e) {
         e.dataTransfer.setData('node', type);
         e.dataTransfer.effectAllowed = 'copy';
