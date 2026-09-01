@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>系統流程圖工具</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/drawflow@0.0.60/dist/drawflow.min.css">
+<style>
+  :root {
+    --bg: #f1f5f9;
+    --panel: #ffffff;
+    --border: #e2e8f0;
+    --accent: #2563eb;
+    --text: #0f172a;
+    --muted: #64748b;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: "Segoe UI", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    z-index: 10;
+  }
+  .toolbar .brand {
+    font-weight: 700;
+    font-size: 15px;
+    margin-right: 8px;
+    white-space: nowrap;
+  }
+  .toolbar .sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    font-size: 13px;
+    border: 1px solid var(--border);
+    background: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+  .btn:active { background: #eef2f7; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.primary:hover { background: #1d4ed8; }
+  .zoom-label { min-width: 44px; text-align: center; font-variant-numeric: tabular-nums; }
+
+  /* ---------- Layout ---------- */
+  .main { flex: 1; display: flex; min-height: 0; }
+
+  .palette {
+    width: 208px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 12px 10px;
+    z-index: 5;
+  }
+  .palette h3 {
+    margin: 2px 4px 10px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--muted);
+  }
+  .drag-item {
+    display: flex;
+    align-items: center;
+    padding: 9px 10px;
+    margin-bottom: 6px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fbfcfe;
+    cursor: grab;
+    font-size: 13px;
+    user-select: none;
+    transition: background .12s, transform .12s, box-shadow .12s;
+  }
+  .drag-item:hover { background: #f1f5f9; box-shadow: 0 2px 6px rgba(0,0,0,.06); transform: translateY(-1px); }
+  .drag-item:active { cursor: grabbing; }
+
+  .canvas-wrap { flex: 1; position: relative; min-width: 0; }
+  #drawflow { width: 100%; height: 100%; }
+
+  .hint {
+    font-size: 12px;
+    color: var(--muted);
+    padding: 6px 12px;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    white-space: nowrap;
+    overflow-x: auto;
+  }
+  .hint b { color: var(--text); }
+
+  /* ---------- Mini shape previews in palette ---------- */
+  .mini { display: inline-block; width: 26px; height: 18px; margin-right: 9px; flex: 0 0 auto; }
+  .mini.terminator { border-radius: 9px; background: #a5d6a7; }
+  .mini.process { background: #90caf9; border-radius: 2px; }
+  .mini.decision { width: 22px; height: 22px; clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); background: #ffcc80; }
+  .mini.io { clip-path: polygon(14% 0,100% 0,86% 100%,0 100%); background: #ce93d8; }
+  .mini.document { clip-path: polygon(0 0,100% 0,100% 80%,50% 100%,0 80%); background: #ef9a9a; }
+  .mini.database { border-radius: 0 0 50% 50% / 0 0 60% 60%; background: #80deea; height: 20px; }
+  .mini.predefined { background: #b0bec5; border-left: 3px solid #546e7a; border-right: 3px solid #546e7a; border-radius: 2px; }
+  .mini.connector { border-radius: 50%; width: 20px; height: 20px; background: #ffe082; }
+
+  /* ---------- Drawflow overrides ---------- */
+  .parent-drawflow {
+    background-color: #f8fafc;
+    background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+  .drawflow .drawflow-node {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    width: auto;
+    min-height: 0;
+    border-radius: 0;
+    color: var(--text);
+    z-index: 2;
+  }
+  .drawflow .drawflow-node:hover { cursor: move; }
+  .drawflow .drawflow-node .drawflow_content_node {
+    width: 100%;
+    display: block;
+    filter: drop-shadow(0 1px 3px rgba(15,23,42,.18));
+  }
+  .drawflow .drawflow-node.selected .drawflow_content_node {
+    filter: drop-shadow(0 0 0 2px #2563eb) drop-shadow(0 0 0 5px rgba(37,99,235,.22));
+  }
+  .drawflow .drawflow-node .shape {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 132px;
+    min-height: 58px;
+    padding: 14px 20px;
+    font-weight: 600;
+    font-size: 14px;
+    text-align: center;
+  }
+  .shape.terminator  { background: #e8f5e9; border-radius: 30px; color: #1b5e20; }
+  .shape.process     { background: #e3f2fd; border-radius: 6px;  color: #0d47a1; }
+  .shape.decision    { background: #fff3e0; clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); color: #e65100; min-width: 120px; min-height: 84px; }
+  .shape.io          { background: #f3e5f5; clip-path: polygon(14% 0,100% 0,86% 100%,0 100%); color: #4a148c; padding-left: 28px; padding-right: 28px; }
+  .shape.document    { background: #ffebee; clip-path: polygon(0 0,100% 0,100% 80%,50% 100%,0 80%); color: #b71c1c; padding-bottom: 28px; }
+  .shape.database    { background: #e0f7fa; border-radius: 0 0 50% 50% / 0 0 26% 26%; color: #004d40; padding-bottom: 22px; }
+  .shape.predefined  { background: #eceff1; border-left: 6px solid #546e7a; border-right: 6px solid #546e7a; color: #263238; border-radius: 4px; }
+  .shape.connector   { background: #fffde7; border-radius: 50%; color: #f57f17; min-width: 76px; min-height: 76px; }
+
+  .node-label {
+    outline: none;
+    white-space: pre-wrap;
+    text-align: center;
+    min-width: 40px;
+    line-height: 1.35;
+    cursor: text;
+  }
+  .node-label:empty::before { content: attr(data-ph); color: #94a3b8; }
+
+  .drawflow .drawflow-node .input,
+  .drawflow .drawflow-node .output {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #94a3b8;
+    cursor: crosshair;
+    z-index: 1;
+  }
+  .drawflow .drawflow-node .input { left: -9px; background: #fff; }
+  .drawflow .drawflow-node .output { right: -9px; background: #fff; }
+  .drawflow .drawflow-node .input:hover,
+  .drawflow .drawflow-node .output:hover { border-color: var(--accent); background: #dbeafe; }
+
+  .drawflow .connection .main-path { stroke: #64748b; stroke-width: 2; marker-end: url(#arrow); }
+  .drawflow .connection .main-path:hover { stroke: var(--accent); }
+  .drawflow .connection .main-path.selected { stroke: var(--accent); }
+  .drawflow .connection .point { cursor: move; stroke: #334155; stroke-width: 1.5; fill: #fff; }
+  .drawflow .connection .point:hover, .drawflow .connection .point.selected { fill: var(--accent); }
+
+  .drawflow-delete {
+    background: #dc2626;
+    color: #fff;
+    border: 2px solid #fff;
+    font-family: monospace;
+    font-weight: 700;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 4;
+  }
+
+  @media (max-width: 720px) {
+    .main { flex-direction: column; }
+    .palette { width: 100%; border-right: none; border-bottom: 1px solid var(--border); display: flex; overflow-x: auto; padding: 8px; gap: 6px; }
+    .palette h3 { display: none; }
+    .drag-item { flex: 0 0 auto; margin-bottom: 0; }
+  }
+</style>
+</head>
+<body>
+
+  <header class="toolbar">
+    <span class="brand">🔀 系統流程圖工具</span>
+    <span class="sep"></span>
+    <button class="btn" id="btnUndo" title="復原 (Ctrl+Z)">↶ 復原</button>
+    <button class="btn" id="btnRedo" title="重做 (Ctrl+Shift+Z)">↷ 重做</button>
+    <span class="sep"></span>
+    <button class="btn primary" id="btnExportPng" title="將整張圖匯出成 PNG 圖片">🖼 匯出 PNG</button>
+    <button class="btn" id="btnExportJson" title="下載流程圖資料 (JSON)">📥 匯出 JSON</button>
+    <button class="btn" id="btnImportJson" title="從 JSON 檔匯入">📤 匯入 JSON</button>
+    <span class="sep"></span>
+    <button class="btn" id="btnClear" title="清空畫布">🗑 清空</button>
+    <span class="sep"></span>
+    <button class="btn" id="btnZoomOut" title="縮小">−</button>
+    <span class="zoom-label" id="zoomLabel">100%</span>
+    <button class="btn" id="btnZoomIn" title="放大">＋</button>
+    <button class="btn" id="btnZoomReset" title="回復 100%">重置</button>
+  </header>
+
+  <div class="main">
+    <aside class="palette">
+      <h3>元件 (拖曳到畫布)</h3>
+      <div id="paletteList"></div>
+    </aside>
+    <main class="canvas-wrap">
+      <div id="drawflow"></div>
+    </main>
+  </div>
+
+  <div class="hint">
+    <b>操作：</b> 從左側<b>拖曳元件</b>到畫布 →
+    <b>點選文字</b>即可編輯 →
+    從右側<b>圓點拉到左側圓點</b>建立連線 →
+    <b>右鍵</b>或按 <b>Delete</b> 刪除 →
+    <b>Ctrl + 滾輪</b> 縮放 →
+    <b>拖曳空白處</b> 平移畫布 →
+    <b>雙擊連線</b> 新增轉折點（雙擊轉折點可移除）
+  </div>
+
+  <input type="file" id="fileInput" accept=".json,application/json" style="display:none">
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto">
+        <path d="M0,0 L10,5 L0,10 Z" fill="#64748b" />
+      </marker>
+    </defs>
+  </svg>
+
+  <script src="https://cdn.jsdelivr.net/npm/drawflow@0.0.60/dist/drawflow.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script>
+  (function () {
+    const NODE_TYPES = {
+      start:      { label: '開始',       cls: 'terminator', in: 0, out: 1 },
+      io:         { label: '輸入 / 輸出', cls: 'io',         in: 1, out: 1 },
+      process:    { label: '處理',       cls: 'process',    in: 1, out: 1 },
+      decision:   { label: '決策',       cls: 'decision',   in: 1, out: 2 },
+      document:   { label: '文件',       cls: 'document',   in: 1, out: 1 },
+      database:   { label: '資料庫',     cls: 'database',   in: 1, out: 1 },
+      predefined: { label: '子程序',     cls: 'predefined', in: 1, out: 1 },
+      connector:  { label: 'A',          cls: 'connector',  in: 1, out: 1 },
+      end:        { label: '結束',       cls: 'terminator', in: 1, out: 0 }
+    };
+    const PALETTE_ORDER = ['start','io','process','decision','document','database','predefined','connector','end'];
+
+    const canvas = document.getElementById('drawflow');
+    const editor = new Drawflow(canvas);
+    editor.reroute = true;
+    editor.draggable_inputs = false;
+    editor.zoom_max = 2;
+    editor.zoom_min = 0.3;
+    editor.start();
+
+    // ---------- Node creation ----------
+    function nodeHtml(type, label) {
+      const cls = NODE_TYPES[type].cls;
+      return '<div class="shape ' + cls + '"><span class="node-label" contenteditable="true" df-label data-ph="輸入文字">' + label + '</span></div>';
+    }
+
+    function createNode(type, x, y, labelOverride) {
+      const t = NODE_TYPES[type];
+      const label = labelOverride || t.label;
+      return editor.addNode(type, t.in, t.out, x, y, t.cls, { label: label }, nodeHtml(type, label));
+    }
+
+    // ---------- Palette ----------
+    const paletteList = document.getElementById('paletteList');
+    PALETTE_ORDER.forEach(function (type) {
+      const t = NODE_TYPES[type];
+      const item = document.createElement('div');
+      item.className = 'drag-item';
+      item.draggable = true;
+      item.dataset.node = type;
+      item.innerHTML = '<i class="mini ' + t.cls + '"></i><span>' + t.label + '</span>';
+      item.addEventListener('dragstart', function (e) {
+        e.dataTransfer.setData('node', type);
+        e.dataTransfer.effectAllowed = 'copy';
+      });
+      item.addEventListener('click', function () {
+        addAtCenter(type);
+      });
+      paletteList.appendChild(item);
+    });
+
+    function addAtCenter(type) {
+      const rect = canvas.getBoundingClientRect();
+      addNodeAt(type, rect.left + rect.width / 2, rect.top + rect.height / 2);
+    }
+
+    function addNodeAt(type, clientX, clientY) {
+      if (editor.editor_mode !== 'edit') return;
+      const pc = editor.precanvas;
+      const sx = pc.clientWidth / (pc.clientWidth * editor.zoom);
+      const sy = pc.clientHeight / (pc.clientHeight * editor.zoom);
+      const pos_x = clientX * sx - pc.getBoundingClientRect().x * sx;
+      const pos_y = clientY * sy - pc.getBoundingClientRect().y * sy;
+      createNode(type, pos_x - 66, pos_y - 30);
+    }
+
+    canvas.addEventListener('dragover', function (e) { e.preventDefault(); });
+    canvas.addEventListener('drop', function (e) {
+      e.preventDefault();
+      const type = e.dataTransfer.getData('node');
+      if (NODE_TYPES[type]) addNodeAt(type, e.clientX, e.clientY);
+    });
+
+    // ---------- Sample diagram ----------
+    function loadSample() {
+      const start = createNode('start', 90, 215);
+      const io = createNode('io', 250, 210, '輸入資料');
+      const dec = createNode('decision', 435, 190, '資料正確？');
+      const doc = createNode('document', 650, 90, '儲存結果');
+      const proc = createNode('process', 650, 300, '修正資料');
+      const end = editor.addNode('end', 2, 0, 870, 200, 'terminator', { label: '結束' }, nodeHtml('end', '結束'));
+
+      editor.addConnection(start, io, 'output_1', 'input_1');
+      editor.addConnection(io, dec, 'output_1', 'input_1');
+      editor.addConnection(dec, doc, 'output_1', 'input_1');
+      editor.addConnection(dec, proc, 'output_2', 'input_1');
+      editor.addConnection(doc, end, 'output_1', 'input_1');
+      editor.addConnection(proc, end, 'output_1', 'input_2');
+    }
+
+    // ---------- Undo / redo ----------
+    let history = [];
+    let redoStack = [];
+    let applying = false;
+
+    function snapshot() { return JSON.stringify(editor.export()); }
+
+    function pushHistory() {
+      if (applying) return;
+      const s = snapshot();
+      if (history[history.length - 1] === s) return;
+      history.push(s);
+      if (history.length > 60) history.shift();
+      redoStack = [];
+      updateUndoButtons();
+    }
+
+    function undo() {
+      if (history.length <= 1) return;
+      redoStack.push(history.pop());
+      applying = true;
+      editor.import(JSON.parse(history[history.length - 1]));
+      applying = false;
+      updateUndoButtons();
+    }
+
+    function redo() {
+      if (!redoStack.length) return;
+      const s = redoStack.pop();
+      history.push(s);
+      applying = true;
+      editor.import(JSON.parse(s));
+      applying = false;
+      updateUndoButtons();
+    }
+
+    function updateUndoButtons() {
+      document.getElementById('btnUndo').disabled = history.length <= 1;
+      document.getElementById('btnRedo').disabled = redoStack.length === 0;
+    }
+
+    function debounce(fn, ms) {
+      let t;
+      return function () { clearTimeout(t); t = setTimeout(fn, ms); };
+    }
+
+    // ---------- Persistence ----------
+    const LS_KEY = 'flowchart-editor-v1';
+    function save() { try { localStorage.setItem(LS_KEY, JSON.stringify(editor.export())); } catch (e) {} }
+    function loadSaved() { try { return localStorage.getItem(LS_KEY); } catch (e) { return null; } }
+    const saveDebounced = debounce(save, 500);
+
+    ['nodeCreated','nodeRemoved','connectionCreated','connectionRemoved','nodeMoved'].forEach(function (ev) {
+      editor.on(ev, function () { if (applying) return; pushHistory(); saveDebounced(); });
+    });
+    editor.on('nodeDataChanged', debounce(function () { if (applying) return; pushHistory(); saveDebounced(); }, 400));
+    editor.on('zoom', function (z) { document.getElementById('zoomLabel').textContent = Math.round(z * 100) + '%'; });
+
+    // ---------- View helpers ----------
+    function resetView() {
+      editor.canvas_x = 0; editor.canvas_y = 0;
+      editor.zoom = 1; editor.zoom_last_value = 1;
+      editor.precanvas.style.transform = '';
+      document.getElementById('zoomLabel').textContent = '100%';
+    }
+
+    // ---------- Toolbar actions ----------
+    document.getElementById('btnUndo').addEventListener('click', undo);
+    document.getElementById('btnRedo').addEventListener('click', redo);
+    document.getElementById('btnZoomIn').addEventListener('click', function () { editor.zoom_in(); });
+    document.getElementById('btnZoomOut').addEventListener('click', function () { editor.zoom_out(); });
+    document.getElementById('btnZoomReset').addEventListener('click', function () { editor.zoom_reset(); });
+
+    document.getElementById('btnExportJson').addEventListener('click', function () {
+      const blob = new Blob([JSON.stringify(editor.export(), null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'flowchart.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    const fileInput = document.getElementById('fileInput');
+    document.getElementById('btnImportJson').addEventListener('click', function () { fileInput.click(); });
+    fileInput.addEventListener('change', function () {
+      const f = fileInput.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = function () {
+        try {
+          const data = JSON.parse(reader.result);
+          applying = true;
+          editor.import(data);
+          applying = false;
+          resetView();
+          history = [snapshot()];
+          redoStack = [];
+          updateUndoButtons();
+          save();
+        } catch (err) {
+          alert('匯入失敗：' + err.message);
+        }
+      };
+      reader.readAsText(f);
+      fileInput.value = '';
+    });
+
+    document.getElementById('btnExportPng').addEventListener('click', function () {
+      if (typeof html2canvas === 'undefined') { alert('匯出元件載入失敗，請檢查網路連線。'); return; }
+      const pc = editor.precanvas;
+      const container = canvas;
+      const prevTransform = pc.style.transform;
+      const prevOverflow = container.style.overflow;
+      const prevW = pc.style.width, prevH = pc.style.height;
+
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      pc.querySelectorAll('.drawflow-node').forEach(function (n) {
+        minX = Math.min(minX, n.offsetLeft);
+        minY = Math.min(minY, n.offsetTop);
+        maxX = Math.max(maxX, n.offsetLeft + n.offsetWidth);
+        maxY = Math.max(maxY, n.offsetTop + n.offsetHeight);
+      });
+      if (!isFinite(minX)) { minX = 0; minY = 0; maxX = 400; maxY = 300; }
+      const pad = 40;
+      const W = Math.max(200, maxX - minX + pad * 2);
+      const H = Math.max(150, maxY - minY + pad * 2);
+
+      pc.style.transform = '';
+      pc.style.width = W + 'px';
+      pc.style.height = H + 'px';
+      container.style.overflow = 'visible';
+
+      html2canvas(pc, { backgroundColor: '#ffffff', scale: 2 }).then(function (c) {
+        const a = document.createElement('a');
+        a.download = 'flowchart.png';
+        a.href = c.toDataURL('image/png');
+        a.click();
+      }).catch(function (err) {
+        alert('匯出 PNG 失敗：' + err.message);
+      }).finally(function () {
+        pc.style.transform = prevTransform;
+        pc.style.width = prevW; pc.style.height = prevH;
+        container.style.overflow = prevOverflow;
+      });
+    });
+
+    document.getElementById('btnClear').addEventListener('click', function () {
+      if (!confirm('確定要清空畫布嗎？')) return;
+      editor.clear();
+      resetView();
+      pushHistory();
+      save();
+    });
+
+    // ---------- Keyboard shortcuts ----------
+    window.addEventListener('keydown', function (e) {
+      const ae = document.activeElement;
+      if (ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) redo(); else undo();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        e.preventDefault(); redo();
+      }
+    });
+
+    // ---------- Init ----------
+    applying = true;
+    const saved = loadSaved();
+    try {
+      if (saved) { editor.import(JSON.parse(saved)); }
+      else { loadSample(); }
+    } catch (e) {
+      loadSample();
+    }
+    applying = false;
+    resetView();
+    history = [snapshot()];
+    updateUndoButtons();
+  })();
+  </script>
+</body>
+</html>
