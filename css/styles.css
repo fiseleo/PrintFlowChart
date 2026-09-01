@@ -241,6 +241,24 @@ body.dark #searchBox { background: #2a2a2a; color: #e6e6e6; border-color: #4a4a4
 .drawflow .drawflow-node .input:hover,
 .drawflow .drawflow-node .output:hover { border-color: var(--accent); background: #eaeff5; }
 
+/* 三通/四通閥：連接點定位（上/左/右、上/下/左/右） */
+.drawflow .drawflow-node.threeway .input,
+.drawflow .drawflow-node.threeway .output,
+.drawflow .drawflow-node.fourway .input,
+.drawflow .drawflow-node.fourway .output {
+  position: absolute;
+  margin: 0;
+  top: auto; right: auto; bottom: auto; left: auto;
+}
+.drawflow .drawflow-node.threeway .input.input_1   { top: 0; left: 50%; transform: translate(-50%, -50%); }
+.drawflow .drawflow-node.threeway .output.output_1 { left: 0; top: 50%; transform: translate(-50%, -50%); }
+.drawflow .drawflow-node.threeway .output.output_2 { right: 0; top: 50%; transform: translate(50%, -50%); }
+
+.drawflow .drawflow-node.fourway .input.input_1   { top: 0; left: 50%; transform: translate(-50%, -50%); }
+.drawflow .drawflow-node.fourway .input.input_2   { bottom: 0; left: 50%; transform: translate(-50%, 50%); }
+.drawflow .drawflow-node.fourway .output.output_1 { left: 0; top: 50%; transform: translate(-50%, -50%); }
+.drawflow .drawflow-node.fourway .output.output_2 { right: 0; top: 50%; transform: translate(50%, -50%); }
+
 .drawflow .connection .main-path { stroke: #3a3a3a; stroke-width: 1.5; marker-end: url(#arrow); }
 .drawflow .connection .main-path:hover { stroke: var(--accent); }
 .drawflow .connection .main-path.selected { stroke: var(--accent); }

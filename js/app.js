@@ -35,7 +35,7 @@ const canvas = document.getElementById('drawflow');
     function createNode(type, x, y, labelOverride) {
       const t = NODE_TYPES[type];
       const label = labelOverride || t.label;
-      return editor.addNode(type, t.in, t.out, x, y, t.cls, { label: label }, nodeHtml(type, label));
+      return editor.addNode(type, t.in, t.out, x, y, t.cls + (t.cls === type ? '' : ' ' + type), { label: label }, nodeHtml(type, label));
     }
 
     // ---------- Palette ----------
