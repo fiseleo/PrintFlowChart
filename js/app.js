@@ -223,7 +223,7 @@ const canvas = document.getElementById('drawflow');
     }
 
     // ---------- Custom color ----------
-    const COLOR_PALETTE = ['#e3f2fd','#e8f5e9','#fff3e0','#f3e5f5','#ffebee','#e0f7fa','#fffde7','#eceff1','#fce4ec','#e8eaf6'];
+    const COLOR_PALETTE = ['#ffffff','#f4f3f0','#e9e9e6','#deddd8','#eef0ee','#e9edf2','#f4efe6','#eceae8','#e6ebe6','#eee9f2'];
     let selectedNodeId = null;
     function applyNodeColor(id, color) {
       const node = editor.container.querySelector('#node-' + id);
@@ -349,7 +349,7 @@ const canvas = document.getElementById('drawflow');
     }
 
     // ---------- Line style ----------
-    const LINE_COLORS = ['#64748b','#2563eb','#16a34a','#e11d48','#d97706','#0ea5e9'];
+    const LINE_COLORS = ['#3a3a3a','#555555','#1f3a5f','#7a3b3b','#5a6b5a','#6b5a6b'];
     let selectedConn = null;
     function setLineStyle(key, val) {
       if (!selectedConn) return;
@@ -498,9 +498,9 @@ const canvas = document.getElementById('drawflow');
       const t = NODE_TYPES[d.name];
       if (t && t.symbol) {
         inner += '<svg x="' + (cx - 48) + '" y="' + (y + 8) + '" width="96" height="44" viewBox="0 0 120 52">' + t.symbol + '</svg>';
-        inner += '<text x="' + cx + '" y="' + (y + h - 8) + '" text-anchor="middle" font-size="13" font-family="Segoe UI, sans-serif" fill="#1f2937">' + escapeXml(label) + '</text>';
+        inner += '<text x="' + cx + '" y="' + (y + h - 8) + '" text-anchor="middle" font-size="13" font-family="Georgia, Times New Roman, serif" fill="#1b1b1b">' + escapeXml(label) + '</text>';
       } else {
-        inner += '<text x="' + cx + '" y="' + (cy + 4) + '" text-anchor="middle" font-size="13" font-family="Segoe UI, sans-serif" fill="#1f2937" stroke="#fff" stroke-width="3" paint-order="stroke">' + escapeXml(label) + '</text>';
+        inner += '<text x="' + cx + '" y="' + (cy + 4) + '" text-anchor="middle" font-size="13" font-family="Georgia, Times New Roman, serif" fill="#1b1b1b" stroke="#fff" stroke-width="3" paint-order="stroke">' + escapeXml(label) + '</text>';
       }
       return '<g>' + shape + inner + '</g>';
     }
@@ -519,7 +519,7 @@ const canvas = document.getElementById('drawflow');
       const pad = 30;
       const W = maxX - minX + pad * 2, H = maxY - minY + pad * 2;
       const ox = minX - pad, oy = minY - pad;
-      let body = '<defs><marker id="arrow-svg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#64748b"/></marker></defs>';
+      let body = '<defs><marker id="arrow-svg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#3a3a3a"/></marker></defs>';
       body += '<g transform="translate(' + (-ox) + ',' + (-oy) + ')">';
       ids.forEach(function (id) { body += nodeToSVG(id, data[id]); });
       for (const id in data) {
@@ -531,11 +531,11 @@ const canvas = document.getElementById('drawflow');
             const p = svgEl.querySelector('.main-path');
             if (!p) return;
             const dattr = p.getAttribute('d');
-            const stroke = conn.color || '#64748b';
+            const stroke = conn.color || '#3a3a3a';
             body += '<path d="' + dattr + '" fill="none" stroke="' + stroke + '" stroke-width="2" marker-end="url(#arrow-svg)"' + (conn.style === 'dashed' ? ' stroke-dasharray="6 4"' : '') + '/>';
             if (conn.label) {
               const mid = p.getPointAtLength(p.getTotalLength() / 2);
-              body += '<text x="' + mid.x + '" y="' + (mid.y + 4) + '" text-anchor="middle" font-size="12" fill="#334155" stroke="#fff" stroke-width="3" paint-order="stroke">' + escapeXml(conn.label) + '</text>';
+              body += '<text x="' + mid.x + '" y="' + (mid.y + 4) + '" text-anchor="middle" font-size="12" fill="#1b1b1b" stroke="#fff" stroke-width="3" paint-order="stroke">' + escapeXml(conn.label) + '</text>';
             }
           });
         }
