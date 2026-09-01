@@ -68,6 +68,8 @@
   .swatch { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #e2e8f0; cursor: pointer; padding: 0; }
   .swatch:hover { border-color: #94a3b8; }
   .swatch.reset { background: repeating-linear-gradient(45deg, #fff, #fff 3px, #cbd5e1 3px, #cbd5e1 6px); }
+  #searchBox { padding: 6px 10px; font-size: 13px; border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--text); width: 140px; outline: none; }
+  body.dark #searchBox { background: #334155; color: #e2e8f0; border-color: #475569; }
 
   /* ---------- Layout ---------- */
   .main { flex: 1; display: flex; min-height: 0; }
@@ -256,6 +258,9 @@
   .drawflow-node.multi-selected .drawflow_content_node {
     filter: drop-shadow(0 0 0 2px #f59e0b) drop-shadow(0 0 0 5px rgba(245,158,11,.25));
   }
+  .drawflow-node.search-hit .drawflow_content_node {
+    filter: drop-shadow(0 0 0 3px #dc2626) drop-shadow(0 0 0 7px rgba(220,38,38,.25));
+  }
 
   body.dark { --bg: #0f172a; --panel: #1e293b; --border: #334155; --text: #e2e8f0; --muted: #94a3b8; }
   body.dark .toolbar, body.dark .palette, body.dark .hint, body.dark .tabs { background: #1e293b; }
@@ -307,6 +312,19 @@
     <button class="btn" id="btnLineSolid" title="連線改實線">─ 實線</button>
     <button class="btn" id="btnLineDashed" title="連線改虛線">┄ 虛線</button>
     <span class="swatches" id="lineColors" title="點選連線後再點顏色"></span>
+    <button class="btn" id="btnOrtho" title="直角連線（開/關）">∟ 直角</button>
+    <span class="sep"></span>
+    <button class="btn" id="alL" title="靠左對齊">⇤</button>
+    <button class="btn" id="alC" title="水平置中">⇹</button>
+    <button class="btn" id="alR" title="靠右對齊">⇥</button>
+    <button class="btn" id="alT" title="靠上對齊">⇪</button>
+    <button class="btn" id="alM" title="垂直置中">⇳</button>
+    <button class="btn" id="alB" title="靠下對齊">⇩</button>
+    <button class="btn" id="distH" title="水平等距分布">↔</button>
+    <button class="btn" id="distV" title="垂直等距分布">↕</button>
+    <span class="sep"></span>
+    <input type="search" id="searchBox" placeholder="🔍 搜尋節點" title="輸入文字搜尋節點，Enter 跳到下一個，Esc 清除">
+    <button class="btn" id="btnPrint" title="列印 / 匯出 PDF">🖨 列印</button>
   </header>
 
   <div class="tabs" id="tabs"></div>
@@ -391,6 +409,16 @@
     editor.zoom_max = 2;
     editor.zoom_min = 0.3;
     editor.start();
+
+    let orthoMode = false;
+    const origCreateCurvature = editor.createCurvature;
+    editor.createCurvature = function (x1, y1, x2, y2, curvature, type) {
+      if (orthoMode && type === 'openclose') {
+        const mid = x1 + (x2 - x1) / 2;
+        return 'M ' + x1 + ' ' + y1 + ' L ' + mid + ' ' + y1 + ' L ' + mid + ' ' + y2 + ' L ' + x2 + ' ' + y2;
+      }
+      return origCreateCurvature.call(this, x1, y1, x2, y2, curvature, type);
+    };
 
     // ---------- Node creation ----------
     function nodeHtml(type, label) {
@@ -860,10 +888,10 @@
       inner += '<text x="' + cx + '" y="' + (cy + 4) + '" text-anchor="middle" font-size="13" font-family="Segoe UI, sans-serif" fill="#1f2937" stroke="#fff" stroke-width="3" paint-order="stroke">' + escapeXml(label) + '</text>';
       return '<g>' + shape + inner + '</g>';
     }
-    function exportSVG() {
+    function buildSVG() {
       const data = editor.drawflow.drawflow[editor.module].data;
       const ids = Object.keys(data);
-      if (!ids.length) { alert('沒有可匯出的內容'); return; }
+      if (!ids.length) return null;
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       ids.forEach(function (id) {
         const d = data[id];
@@ -897,13 +925,26 @@
         }
       }
       body += '</g>';
-      const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' + body + '</svg>';
+      return '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' + body + '</svg>';
+    }
+    function exportSVG() {
+      const svg = buildSVG();
+      if (!svg) { alert('沒有可匯出的內容'); return; }
       const blob = new Blob([svg], { type: 'image/svg+xml' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = 'flowchart.svg';
       a.click();
       URL.revokeObjectURL(a.href);
+    }
+    function printDiagram() {
+      const svg = buildSVG();
+      if (!svg) { alert('沒有可列印的內容'); return; }
+      const w = window.open('', '_blank');
+      if (!w) { alert('請允許彈出視窗以列印'); return; }
+      const printSvg = svg.replace('<svg ', '<svg style="width:100%;height:auto" ');
+      w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>流程圖</title><style>html,body{margin:0;padding:12px}svg{width:100%;height:auto}</style></head><body>' + printSvg + '<script>setTimeout(function(){window.print()},200);<\/script></body></html>');
+      w.document.close();
     }
 
     // ---------- Theme ----------
@@ -912,6 +953,92 @@
       const b = document.getElementById('btnTheme');
       if (b) b.textContent = dark ? '☀️' : '🌙';
       try { localStorage.setItem('flowchart-theme', dark ? 'dark' : 'light'); } catch (e) {}
+    }
+
+    // ---------- Search ----------
+    let searchMatches = [];
+    let searchIndex = 0;
+    function centerOnNode(id) {
+      const el = editor.container.querySelector('#node-' + id);
+      if (!el) return;
+      const d = editor.drawflow.drawflow[editor.module].data[id];
+      const nw = el.offsetWidth, nh = el.offsetHeight;
+      const tx = d.pos_x + nw / 2, ty = d.pos_y + nh / 2;
+      editor.canvas_x = canvas.clientWidth / 2 - tx * editor.zoom;
+      editor.canvas_y = canvas.clientHeight / 2 - ty * editor.zoom;
+      editor.zoom_refresh();
+    }
+    function doSearch(q) {
+      editor.container.querySelectorAll('.search-hit').forEach(function (el) { el.classList.remove('search-hit'); });
+      searchMatches = [];
+      searchIndex = 0;
+      if (!q) return;
+      const ql = q.toLowerCase();
+      const data = editor.drawflow.drawflow[editor.module].data;
+      for (const id in data) {
+        const label = (data[id].data && data[id].data.label) || '';
+        if (label.toLowerCase().indexOf(ql) !== -1) searchMatches.push(id);
+      }
+      searchMatches.forEach(function (id) {
+        const el = editor.container.querySelector('#node-' + id);
+        if (el) el.classList.add('search-hit');
+      });
+      if (searchMatches.length) centerOnNode(searchMatches[0]);
+    }
+
+    // ---------- Align / distribute ----------
+    function selectedNodes() {
+      const data = editor.drawflow.drawflow[editor.module].data;
+      return Array.from(multiSel).filter(function (id) { return data[id]; });
+    }
+    function nodeRect(id) {
+      const d = editor.drawflow.drawflow[editor.module].data[id];
+      const el = editor.container.querySelector('#node-' + id);
+      return { x: d.pos_x, y: d.pos_y, w: el ? el.offsetWidth : 132, h: el ? el.offsetHeight : 58 };
+    }
+    function moveNode(id, x, y) {
+      const d = editor.drawflow.drawflow[editor.module].data[id];
+      d.pos_x = x; d.pos_y = y;
+      const el = editor.container.querySelector('#node-' + id);
+      if (el) { el.style.left = x + 'px'; el.style.top = y + 'px'; }
+      editor.updateConnectionNodes('node-' + id);
+    }
+    function alignNodes(mode) {
+      const nodes = selectedNodes();
+      if (nodes.length < 2) return;
+      const rects = nodes.map(nodeRect);
+      if (mode === 'left') { const r = Math.min.apply(null, rects.map(function (v) { return v.x; })); nodes.forEach(function (id, i) { moveNode(id, r, rects[i].y); }); }
+      else if (mode === 'centerH') { const cs = rects.map(function (v) { return v.x + v.w / 2; }); const c = (Math.min.apply(null, cs) + Math.max.apply(null, cs)) / 2; nodes.forEach(function (id, i) { moveNode(id, c - rects[i].w / 2, rects[i].y); }); }
+      else if (mode === 'right') { const r = Math.max.apply(null, rects.map(function (v) { return v.x + v.w; })); nodes.forEach(function (id, i) { moveNode(id, r - rects[i].w, rects[i].y); }); }
+      else if (mode === 'top') { const r = Math.min.apply(null, rects.map(function (v) { return v.y; })); nodes.forEach(function (id, i) { moveNode(id, rects[i].x, r); }); }
+      else if (mode === 'middleV') { const cs = rects.map(function (v) { return v.y + v.h / 2; }); const c = (Math.min.apply(null, cs) + Math.max.apply(null, cs)) / 2; nodes.forEach(function (id, i) { moveNode(id, rects[i].x, c - rects[i].h / 2); }); }
+      else if (mode === 'bottom') { const r = Math.max.apply(null, rects.map(function (v) { return v.y + v.h; })); nodes.forEach(function (id, i) { moveNode(id, rects[i].x, r - rects[i].h); }); }
+      refreshEdgeLabels(); pushHistory(); saveDebounced();
+    }
+    function distribute(mode) {
+      const nodes = selectedNodes();
+      if (nodes.length < 3) return;
+      const arr = nodes.map(function (id) { return { id: id, r: nodeRect(id) }; });
+      if (mode === 'h') {
+        arr.sort(function (a, b) { return a.r.x - b.r.x; });
+        const min = arr[0].r.x, max = arr[arr.length - 1].r.x + arr[arr.length - 1].r.w;
+        const totalW = arr.reduce(function (s, o) { return s + o.r.w; }, 0);
+        const gap = (max - min - totalW) / (arr.length - 1);
+        let cur = min;
+        arr.forEach(function (o) { moveNode(o.id, cur, o.r.y); cur += o.r.w + gap; });
+      } else {
+        arr.sort(function (a, b) { return a.r.y - b.r.y; });
+        const min = arr[0].r.y, max = arr[arr.length - 1].r.y + arr[arr.length - 1].r.h;
+        const totalH = arr.reduce(function (s, o) { return s + o.r.h; }, 0);
+        const gap = (max - min - totalH) / (arr.length - 1);
+        let cur = min;
+        arr.forEach(function (o) { moveNode(o.id, o.r.x, cur); cur += o.r.h + gap; });
+      }
+      refreshEdgeLabels(); pushHistory(); saveDebounced();
+    }
+    function reflowConnections() {
+      Object.keys(editor.drawflow.drawflow[editor.module].data).forEach(function (id) { editor.updateConnectionNodes('node-' + id); });
+      refreshEdgeLabels();
     }
 
     // ---------- Persistence ----------
@@ -1050,6 +1177,28 @@
       s.title = c;
       s.addEventListener('click', function () { setLineStyle('color', c); });
       lineColorsEl.appendChild(s);
+    });
+
+    document.getElementById('btnOrtho').addEventListener('click', function () {
+      orthoMode = !orthoMode;
+      this.classList.toggle('active', orthoMode);
+      reflowConnections();
+    });
+    document.getElementById('alL').addEventListener('click', function () { alignNodes('left'); });
+    document.getElementById('alC').addEventListener('click', function () { alignNodes('centerH'); });
+    document.getElementById('alR').addEventListener('click', function () { alignNodes('right'); });
+    document.getElementById('alT').addEventListener('click', function () { alignNodes('top'); });
+    document.getElementById('alM').addEventListener('click', function () { alignNodes('middleV'); });
+    document.getElementById('alB').addEventListener('click', function () { alignNodes('bottom'); });
+    document.getElementById('distH').addEventListener('click', function () { distribute('h'); });
+    document.getElementById('distV').addEventListener('click', function () { distribute('v'); });
+    document.getElementById('btnPrint').addEventListener('click', printDiagram);
+
+    const searchBox = document.getElementById('searchBox');
+    searchBox.addEventListener('input', function () { doSearch(searchBox.value); });
+    searchBox.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); if (searchMatches.length) { searchIndex = (searchIndex + 1) % searchMatches.length; centerOnNode(searchMatches[searchIndex]); } }
+      else if (e.key === 'Escape') { searchBox.value = ''; doSearch(''); }
     });
 
     document.getElementById('btnExportJson').addEventListener('click', function () {
