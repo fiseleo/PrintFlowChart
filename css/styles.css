@@ -241,7 +241,9 @@ body.dark #searchBox { background: #2a2a2a; color: #e6e6e6; border-color: #4a4a4
 .drawflow .drawflow-node .input:hover,
 .drawflow .drawflow-node .output:hover { border-color: var(--accent); background: #eaeff5; }
 
-/* 三通/四通閥：連接點定位（上/左/右、上/下/左/右） */
+/* 三通/四通閥：連接點定位
+   三通：左 = 入口(input_1)，上 = 出口1，右 = 出口2（入口必須是 .input，Drawflow 只能把線接到 input）
+   四通：上/下 = 入口，左/右 = 出口 */
 .drawflow .drawflow-node.threeway .input,
 .drawflow .drawflow-node.threeway .output,
 .drawflow .drawflow-node.ball3l .input,
@@ -258,10 +260,10 @@ body.dark #searchBox { background: #2a2a2a; color: #e6e6e6; border-color: #4a4a4
 }
 .drawflow .drawflow-node.threeway .input.input_1,
 .drawflow .drawflow-node.ball3l .input.input_1,
-.drawflow .drawflow-node.ball3t .input.input_1 { top: 0; left: 50%; transform: translate(-50%, -50%); }
+.drawflow .drawflow-node.ball3t .input.input_1 { left: 0; top: 50%; transform: translate(-50%, -50%); }
 .drawflow .drawflow-node.threeway .output.output_1,
 .drawflow .drawflow-node.ball3l .output.output_1,
-.drawflow .drawflow-node.ball3t .output.output_1 { left: 0; top: 50%; transform: translate(-50%, -50%); }
+.drawflow .drawflow-node.ball3t .output.output_1 { top: 0; left: 50%; transform: translate(-50%, -50%); }
 .drawflow .drawflow-node.threeway .output.output_2,
 .drawflow .drawflow-node.ball3l .output.output_2,
 .drawflow .drawflow-node.ball3t .output.output_2 { right: 0; top: 50%; transform: translate(50%, -50%); }
