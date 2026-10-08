@@ -241,7 +241,7 @@ body.dark #searchBox { background: #2a2a2a; color: #e6e6e6; border-color: #4a4a4
 .drawflow .drawflow-node .input:hover,
 .drawflow .drawflow-node .output:hover { border-color: var(--accent); background: #eaeff5; }
 
-/* 三通/四通閥：雙向連接點
+/* 角閥 / 三通 / 四通閥：雙向連接點
    每個位置同時疊一個 input 與一個 output（Drawflow 只能從 output 拉線、只能接到 input）。
    平常 output 在上層 → 從該點拉線；拉線中（.df-connecting）output 不接收滑鼠 → 放開時接到 input。
    名稱沿用舊版位置，舊圖的線不會跑位：
@@ -297,6 +297,20 @@ body.dark #searchBox { background: #2a2a2a; color: #e6e6e6; border-color: #4a4a4
 .drawflow .drawflow-node.ball4way .output.output_2,
 .drawflow .drawflow-node.ball4way .input.input_4 { right: 0; top: 50%; transform: translate(50%, -50%); }
 
+/* 角閥：L 形管路 → 上 = 垂直管上端（input_1/output_2），右 = 水平管高度（output_1/input_2）
+   圖示 96px 置中、viewBox 120 寬：垂直管 x=22 → 距中心 -30px；水平管 y=40 → 距節點頂 45px */
+.drawflow .drawflow-node.angle .input,
+.drawflow .drawflow-node.angle .output {
+  position: absolute;
+  margin: 0;
+  top: auto; right: auto; bottom: auto; left: auto;
+}
+.drawflow .drawflow-node.angle .input.input_1,
+.drawflow .drawflow-node.angle .output.output_2 { top: 0; left: calc(50% - 30px); transform: translate(-50%, -50%); }
+.drawflow .drawflow-node.angle .output.output_1,
+.drawflow .drawflow-node.angle .input.input_2 { right: 0; top: 45px; transform: translate(50%, -50%); }
+
+.df-connecting .drawflow-node.angle .output,
 .df-connecting .drawflow-node.threeway .output,
 .df-connecting .drawflow-node.ball3l .output,
 .df-connecting .drawflow-node.ball3t .output,
@@ -349,3 +363,43 @@ body.dark .shape.sym { border-color: #8a867e; }
   .palette { width: 100%; border-right: none; border-bottom: 1px solid var(--border); max-height: 40vh; overflow-y: auto; display: block; }
   .palette h3 { display: none; }
 }
+
+/* ---------- 列印設定對話框 ---------- */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(20, 18, 15, .45);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.modal-backdrop[hidden] { display: none; }
+.modal {
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--border); border-radius: 4px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .25);
+  width: min(640px, 100%); max-height: calc(100vh - 32px); overflow: auto;
+  padding: 18px 20px 16px;
+}
+.modal h3 { margin: 0 0 14px; font-size: 16px; font-weight: 700; letter-spacing: .02em; }
+.print-body { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+.print-form { flex: 1 1 220px; display: flex; flex-direction: column; gap: 10px; }
+.print-form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.print-form .inline { display: inline-flex; align-items: center; gap: 6px; color: var(--text); }
+.print-form select, .print-form input[type=number] {
+  font-family: var(--serif); font-size: 13px; color: var(--text);
+  background: var(--panel); border: 1px solid var(--border); border-radius: 3px; padding: 5px 6px;
+}
+.print-form input[type=number] { width: 80px; }
+.print-info { margin: 4px 0 0; font-size: 12.5px; line-height: 1.6; color: var(--text); }
+.print-preview {
+  flex: 0 0 280px; height: 280px;
+  display: flex; align-items: center; justify-content: center;
+  background: #8a8a86; border-radius: 3px;
+}
+.pv-sheet { position: relative; background: #fff; overflow: hidden; box-shadow: 0 1px 4px rgba(0, 0, 0, .35); }
+.pv-art { position: absolute; }
+.pv-cut { position: absolute; display: block; border: 0 dashed #c62828; }
+.pv-cut.v { top: 0; bottom: 0; border-left-width: 1px; }
+.pv-cut.h { left: 0; right: 0; border-top-width: 1px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+body.dark .print-form select, body.dark .print-form input[type=number] { background: #2a2824; }
+@media (max-width: 560px) { .print-preview { flex-basis: 100%; } }

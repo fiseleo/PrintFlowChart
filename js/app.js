@@ -11,7 +11,7 @@ const canvas = document.getElementById('drawflow');
     // ---------- 雙向連接點（三通/四通閥） ----------
     // 每個連接點位置同時疊一個 input 與一個 output：從該點拉線 = output，把線拉到該點 = input。
     // 拉線期間讓這些節點的 output 不接收滑鼠，放開時才會落在下方的 input 上。
-    const BIDIR_PORTS = { threeway: 3, ball3l: 3, ball3t: 3, fourway: 4, ball4way: 4 };
+    const BIDIR_PORTS = { angle: 2, threeway: 3, ball3l: 3, ball3t: 3, fourway: 4, ball4way: 4 };
     function padBidirPorts(data) {
       const modules = (data && data.drawflow) || {};
       Object.keys(modules).forEach(function (m) {
@@ -583,15 +583,116 @@ const canvas = document.getElementById('drawflow');
       a.click();
       URL.revokeObjectURL(a.href);
     }
-    function printDiagram() {
-      const svg = buildSVG();
-      if (!svg) { alert('沒有可列印的內容'); return; }
+    // ---------- Print（列印設定：紙張 / 方向 / 符合頁面 / 自訂比例 / 多頁拼接） ----------
+    const PAPER = { A4: [210, 297], A3: [297, 420], Letter: [215.9, 279.4] };
+    const PX_MM = 25.4 / 96;           // 畫布 1px = 0.2646 mm（96 dpi）
+    const PRINT_KEY = 'flowchart-print-v1';
+    const prEl = function (id) { return document.getElementById(id); };
+    const printDlg = prEl('printDlg');
+    let printSvgCache = null;
+
+    function readPrintOpts() {
+      return {
+        paper: prEl('prPaper').value,
+        orient: prEl('prOrient').value,
+        fit: prEl('prFit').value,
+        scale: Math.min(400, Math.max(10, parseFloat(prEl('prScale').value) || 100)),
+        margin: Math.min(40, Math.max(0, parseFloat(prEl('prMargin').value) || 0))
+      };
+    }
+    // 依圖形尺寸 W×H（px）算出：實際方向、可列印區（mm）、縮放倍率、頁數與每頁在圖上的視窗大小
+    function printLayout(W, H, o) {
+      const base = PAPER[o.paper] || PAPER.A4;
+      const landscape = o.orient === 'landscape' || (o.orient === 'auto' && W > H);
+      const pageW = landscape ? base[1] : base[0], pageH = landscape ? base[0] : base[1];
+      const pw = Math.max(20, pageW - 2 * o.margin), ph = Math.max(20, pageH - 2 * o.margin);
+      const Wmm = W * PX_MM, Hmm = H * PX_MM;
+      let s = o.fit === 'fit' ? Math.min(pw / Wmm, ph / Hmm) : o.fit === 'actual' ? 1 : o.scale / 100;
+      const nx = o.fit === 'fit' ? 1 : Math.max(1, Math.ceil(Wmm * s / pw - 1e-6));
+      const ny = o.fit === 'fit' ? 1 : Math.max(1, Math.ceil(Hmm * s / ph - 1e-6));
+      const vw = pw / (s * PX_MM), vh = ph / (s * PX_MM);   // 每頁可容納的圖形寬高（px）
+      return { landscape: landscape, pageW: pageW, pageH: pageH, pw: pw, ph: ph, s: s, nx: nx, ny: ny, vw: vw, vh: vh,
+               offX: (nx * vw - W) / 2, offY: (ny * vh - H) / 2 };   // 圖形置中
+    }
+    function svgSize(svg) {
+      const m = /width="([\d.]+)" height="([\d.]+)"/.exec(svg);
+      return m ? [parseFloat(m[1]), parseFloat(m[2])] : [800, 600];
+    }
+    function updatePrintPreview() {
+      if (!printSvgCache) return;
+      const o = readPrintOpts();
+      prEl('prScaleRow').style.display = o.fit === 'custom' ? '' : 'none';
+      const wh = svgSize(printSvgCache), W = wh[0], H = wh[1];
+      const L = printLayout(W, H, o);
+      // 預覽：把所有頁面的可列印區拼在一起（虛線 = 分頁處）
+      const totW = L.nx * L.pw, totH = L.ny * L.ph;
+      const box = 260, k = Math.min(box / totW, box / totH);
+      let html = '<div class="pv-sheet" style="width:' + (totW * k) + 'px;height:' + (totH * k) + 'px">';
+      html += '<div class="pv-art" style="left:' + (L.offX * L.s * PX_MM * k) + 'px;top:' + (L.offY * L.s * PX_MM * k) + 'px;width:' + (W * L.s * PX_MM * k) + 'px;height:' + (H * L.s * PX_MM * k) + 'px">' + printSvgCache.replace('<svg ', '<svg preserveAspectRatio="none" style="width:100%;height:100%;display:block" ') + '</div>';
+      for (let i = 1; i < L.nx; i++) html += '<i class="pv-cut v" style="left:' + (i * L.pw * k) + 'px"></i>';
+      for (let j = 1; j < L.ny; j++) html += '<i class="pv-cut h" style="top:' + (j * L.ph * k) + 'px"></i>';
+      html += '</div>';
+      prEl('prPreview').innerHTML = html;
+      const pages = L.nx * L.ny;
+      prEl('prInfo').innerHTML = '實際縮放 <b>' + Math.round(L.s * 100) + '%</b>・' + (L.landscape ? '橫向' : '直向') +
+        '・共 <b>' + pages + '</b> 頁' + (pages > 1 ? '（' + L.nx + ' × ' + L.ny + ' 拼接）' : '') +
+        '<br>列印尺寸約 ' + Math.round(W * PX_MM * L.s) + ' × ' + Math.round(H * PX_MM * L.s) + ' mm';
+    }
+    function openPrintDialog() {
+      printSvgCache = buildSVG();
+      if (!printSvgCache) { alert('沒有可列印的內容'); return; }
+      try {
+        const saved = JSON.parse(localStorage.getItem(PRINT_KEY) || 'null');
+        if (saved) ['paper', 'orient', 'fit', 'scale', 'margin'].forEach(function (k) {
+          const el = prEl('pr' + k.charAt(0).toUpperCase() + k.slice(1));
+          if (el && saved[k] != null) el.value = saved[k];
+        });
+      } catch (e) {}
+      printDlg.hidden = false;
+      updatePrintPreview();
+      prEl('prGo').focus();
+    }
+    function closePrintDialog() { printDlg.hidden = true; printSvgCache = null; }
+    function doPrint() {
+      const svg = printSvgCache;
+      if (!svg) return;
+      const o = readPrintOpts();
+      try { localStorage.setItem(PRINT_KEY, JSON.stringify(o)); } catch (e) {}
+      const wh = svgSize(svg), L = printLayout(wh[0], wh[1], o);
       const w = window.open('', '_blank');
       if (!w) { alert('請允許彈出視窗以列印'); return; }
-      const printSvg = svg.replace('<svg ', '<svg style="width:100%;height:auto" ');
-      w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>流程圖</title><style>html,body{margin:0;padding:12px}svg{width:100%;height:auto}</style></head><body>' + printSvg + '<script>setTimeout(function(){window.print()},200);<\/script></body></html>');
+      const sizeName = o.paper === 'Letter' ? 'letter' : o.paper;
+      let pages = '';
+      for (let j = 0; j < L.ny; j++) for (let i = 0; i < L.nx; i++) {
+        const vx = i * L.vw - L.offX, vy = j * L.vh - L.offY;
+        pages += '<div class="page"><svg xmlns="http://www.w3.org/2000/svg" width="' + L.pw + 'mm" height="' + L.ph + 'mm" viewBox="' +
+          vx + ' ' + vy + ' ' + L.vw + ' ' + L.vh + '">' + svg + '</svg></div>';
+      }
+      const css = '@page{size:' + sizeName + ' ' + (L.landscape ? 'landscape' : 'portrait') + ';margin:' + o.margin + 'mm}' +
+        'html,body{margin:0;padding:0}' +
+        '.page{width:' + L.pw + 'mm;height:' + L.ph + 'mm;overflow:hidden;break-after:page;page-break-after:always}' +
+        '.page:last-child{break-after:auto;page-break-after:auto}.page svg{display:block}' +
+        '@media screen{body{background:#8a8a86;padding:16px 0}.page{background:#fff;margin:0 auto 16px;box-shadow:0 1px 6px rgba(0,0,0,.35)}}';
+      w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>流程圖</title><style>' + css + '</style></head><body>' + pages +
+        '<script>window.addEventListener("load",function(){setTimeout(function(){window.print()},200)});<\/script></body></html>');
       w.document.close();
+      closePrintDialog();
     }
+    ['prPaper', 'prOrient', 'prFit', 'prScale', 'prMargin'].forEach(function (id) {
+      prEl(id).addEventListener('input', updatePrintPreview);
+      prEl(id).addEventListener('change', updatePrintPreview);
+    });
+    prEl('prCancel').addEventListener('click', closePrintDialog);
+    prEl('prGo').addEventListener('click', doPrint);
+    printDlg.addEventListener('mousedown', function (e) { if (e.target === printDlg) closePrintDialog(); });
+    // 對話框開啟時攔下所有按鍵，避免 Delete / Ctrl+V 等畫布快捷鍵誤觸
+    window.addEventListener('keydown', function (e) {
+      if (printDlg.hidden) return;
+      e.stopImmediatePropagation();
+      if (e.key === 'Escape') { e.preventDefault(); closePrintDialog(); }
+      else if (e.key === 'Enter' && e.target.tagName !== 'SELECT' && e.target.tagName !== 'BUTTON') { e.preventDefault(); doPrint(); }
+    }, true);
+    const printDiagram = openPrintDialog;
 
     // ---------- Theme ----------
     function applyTheme(dark) {

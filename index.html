@@ -89,6 +89,49 @@
 
   <script src="https://cdn.jsdelivr.net/npm/drawflow@0.0.60/dist/drawflow.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <div class="modal-backdrop" id="printDlg" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="printTitle">
+      <h3 id="printTitle">列印設定</h3>
+      <div class="print-body">
+        <div class="print-form">
+          <label>紙張
+            <select id="prPaper">
+              <option value="A4">A4（210 × 297 mm）</option>
+              <option value="A3">A3（297 × 420 mm）</option>
+              <option value="Letter">Letter（216 × 279 mm）</option>
+            </select>
+          </label>
+          <label>方向
+            <select id="prOrient">
+              <option value="auto">自動（依圖形長寬）</option>
+              <option value="portrait">直向</option>
+              <option value="landscape">橫向</option>
+            </select>
+          </label>
+          <label>大小
+            <select id="prFit">
+              <option value="fit">符合頁面（自動縮放）</option>
+              <option value="actual">實際大小（100%）</option>
+              <option value="custom">自訂比例</option>
+            </select>
+          </label>
+          <label id="prScaleRow">比例
+            <span class="inline"><input type="number" id="prScale" min="10" max="400" step="5" value="100"> %</span>
+          </label>
+          <label>邊界
+            <span class="inline"><input type="number" id="prMargin" min="0" max="40" step="1" value="10"> mm</span>
+          </label>
+          <p class="print-info" id="prInfo"></p>
+        </div>
+        <div class="print-preview" id="prPreview" aria-label="預覽"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="prCancel">取消</button>
+        <button class="btn primary" id="prGo">🖨 列印</button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/data.js"></script>
   <script src="js/app.js"></script>
 </body>
