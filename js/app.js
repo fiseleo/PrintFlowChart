@@ -8,6 +8,16 @@ const canvas = document.getElementById('drawflow');
     editor.zoom_min = 0.3;
     editor.start();
 
+    // 載入前先套用上次的字級，節點一開始就以正確大小繪製
+    try {
+      const fs0 = parseInt(localStorage.getItem('flowchart-fontsize'), 10);
+      if (fs0 >= 10 && fs0 <= 40) {
+        document.documentElement.style.setProperty('--dfs', fs0 + 'px');
+        const sel0 = document.getElementById('fontSizeSel');
+        if (sel0) sel0.value = String(fs0);
+      }
+    } catch (e) {}
+
     // ---------- 雙向連接點（三通/四通閥） ----------
     // 每個連接點位置同時疊一個 input 與一個 output：從該點拉線 = output，把線拉到該點 = input。
     // 拉線期間讓這些節點的 output 不接收滑鼠，放開時才會落在下方的 input 上。
@@ -507,6 +517,18 @@ const canvas = document.getElementById('drawflow');
     // ---------- SVG export ----------
     const SVG_FILL = { terminator: '#e8f5e9', process: '#e3f2fd', database: '#e0f7fa', predefined: '#eceff1', connector: '#fffde7', decision: '#fff3e0', io: '#f3e5f5', document: '#ffebee', note: '#fefce8', sym: '#f8fafc' };
     function escapeXml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    const SVG_FONT = 'Georgia, &quot;Times New Roman&quot;, &quot;Noto Serif TC&quot;, &quot;Songti TC&quot;, &quot;STSong&quot;, &quot;SimSun&quot;, serif';
+    function diagramFontSize() {
+      return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dfs')) || 16;
+    }
+    // 多行文字：以 (x, cy) 為中心垂直置中
+    function svgText(x, cy, label, fs, extra) {
+      const lines = String(label).split('\n');
+      const lh = fs * 1.4, y0 = cy - (lines.length - 1) * lh / 2;
+      let t = '<text x="' + x + '" y="' + y0 + '" text-anchor="middle" dominant-baseline="central" font-size="' + fs + '" font-family="' + SVG_FONT + '" fill="#1b1b1b"' + (extra || '') + '>';
+      lines.forEach(function (ln, i) { t += '<tspan x="' + x + '" dy="' + (i ? lh : 0) + '">' + escapeXml(ln) + '</tspan>'; });
+      return t + '</text>';
+    }
     function nodeToSVG(id, d) {
       const el = editor.container.querySelector('#node-' + id);
       const w = el ? el.offsetWidth : 132;
@@ -526,11 +548,22 @@ const canvas = document.getElementById('drawflow');
       }
       let inner = '';
       const t = NODE_TYPES[d.name];
+      // 文字大小與位置直接取自畫布上的標籤，列印/匯出與畫面一致
+      const lab = el && el.querySelector('.node-label');
+      let fs = diagramFontSize(), ly = cy;
+      if (lab) {
+        const z = editor.zoom || 1, nr = el.getBoundingClientRect(), lr = lab.getBoundingClientRect();
+        fs = parseFloat(getComputedStyle(lab).fontSize) || fs;
+        if (lr.height) ly = y + (lr.top + lr.height / 2 - nr.top) / z;
+      }
       if (t && t.symbol) {
-        inner += '<svg x="' + (cx - 48) + '" y="' + (y + 8) + '" width="96" height="44" viewBox="0 0 120 52">' + t.symbol + '</svg>';
-        inner += '<text x="' + cx + '" y="' + (y + h - 8) + '" text-anchor="middle" font-size="13" font-family="Georgia, Times New Roman, serif" fill="#1b1b1b">' + escapeXml(label) + '</text>';
+        const ic = el && el.querySelector('.sym-icon');
+        let iy = y + 11.5;
+        if (ic) { const z = editor.zoom || 1; iy = y + (ic.getBoundingClientRect().top - el.getBoundingClientRect().top) / z; }
+        inner += '<svg x="' + (cx - 48) + '" y="' + iy + '" width="96" height="44" viewBox="0 0 120 52">' + t.symbol + '</svg>';
+        inner += svgText(cx, ly, label, fs);
       } else {
-        inner += '<text x="' + cx + '" y="' + (cy + 4) + '" text-anchor="middle" font-size="13" font-family="Georgia, Times New Roman, serif" fill="#1b1b1b" stroke="#fff" stroke-width="3" paint-order="stroke">' + escapeXml(label) + '</text>';
+        inner += svgText(cx, ly, label, fs, ' stroke="#fff" stroke-width="3" paint-order="stroke"');
       }
       return '<g>' + shape + inner + '</g>';
     }
@@ -565,7 +598,7 @@ const canvas = document.getElementById('drawflow');
             body += '<path d="' + dattr + '" fill="none" stroke="' + stroke + '" stroke-width="2" marker-end="url(#arrow-svg)"' + (conn.style === 'dashed' ? ' stroke-dasharray="6 4"' : '') + '/>';
             if (conn.label) {
               const mid = p.getPointAtLength(p.getTotalLength() / 2);
-              body += '<text x="' + mid.x + '" y="' + (mid.y + 4) + '" text-anchor="middle" font-size="12" fill="#1b1b1b" stroke="#fff" stroke-width="3" paint-order="stroke">' + escapeXml(conn.label) + '</text>';
+              body += svgText(mid.x, mid.y, conn.label, diagramFontSize() - 2, ' stroke="#fff" stroke-width="3" paint-order="stroke"');
             }
           });
         }
@@ -913,6 +946,21 @@ const canvas = document.getElementById('drawflow');
     document.getElementById('btnAutoLayout').addEventListener('click', autoLayout);
     document.getElementById('btnExportSvg').addEventListener('click', exportSVG);
     document.getElementById('btnTheme').addEventListener('click', function () { applyTheme(!document.body.classList.contains('dark')); });
+
+    // ---------- 字級（圖面文字大小） ----------
+    const FS_KEY = 'flowchart-fontsize';
+    const fontSizeSel = document.getElementById('fontSizeSel');
+    function applyFontSize(px, persist) {
+      document.documentElement.style.setProperty('--dfs', px + 'px');
+      if (fontSizeSel.value !== String(px)) fontSizeSel.value = String(px);
+      // 節點大小隨文字改變 → 重新計算連線端點與標籤位置
+      const data = editor.drawflow.drawflow[editor.module].data;
+      Object.keys(data).forEach(function (id) { editor.updateConnectionNodes('node-' + id); });
+      refreshEdgeLabels();
+      if (persist) { try { localStorage.setItem(FS_KEY, String(px)); } catch (e) {} }
+    }
+    fontSizeSel.addEventListener('change', function () { applyFontSize(parseInt(fontSizeSel.value, 10) || 16, true); });
+    editor.on('moduleChanged', function () { setTimeout(function () { applyFontSize(parseInt(fontSizeSel.value, 10) || 16, false); }, 0); });
 
     document.getElementById('btnLineSolid').addEventListener('click', function () { setLineStyle('style', null); });
     document.getElementById('btnLineDashed').addEventListener('click', function () { setLineStyle('style', 'dashed'); });
