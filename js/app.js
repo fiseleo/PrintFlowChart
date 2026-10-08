@@ -8,6 +8,36 @@ const canvas = document.getElementById('drawflow');
     editor.zoom_min = 0.3;
     editor.start();
 
+    // ---------- 雙向連接點（三通/四通閥） ----------
+    // 每個連接點位置同時疊一個 input 與一個 output：從該點拉線 = output，把線拉到該點 = input。
+    // 拉線期間讓這些節點的 output 不接收滑鼠，放開時才會落在下方的 input 上。
+    const BIDIR_PORTS = { threeway: 3, ball3l: 3, ball3t: 3, fourway: 4, ball4way: 4 };
+    function padBidirPorts(data) {
+      const modules = (data && data.drawflow) || {};
+      Object.keys(modules).forEach(function (m) {
+        const nodes = (modules[m] && modules[m].data) || {};
+        Object.keys(nodes).forEach(function (id) {
+          const n = nodes[id], k = BIDIR_PORTS[n.name];
+          if (!k) return;
+          n.inputs = n.inputs || {}; n.outputs = n.outputs || {};
+          for (let i = 1; i <= k; i++) {
+            if (!n.inputs['input_' + i]) n.inputs['input_' + i] = { connections: [] };
+            if (!n.outputs['output_' + i]) n.outputs['output_' + i] = { connections: [] };
+          }
+        });
+      });
+      return data;
+    }
+    const origImport = editor.import;
+    editor.import = function (data, notifi) { return origImport.call(this, padBidirPorts(data), notifi); };
+
+    function endConnecting() { canvas.classList.remove('df-connecting'); }
+    editor.on('connectionStart', function () { canvas.classList.add('df-connecting'); });
+    editor.on('connectionCancel', endConnecting);
+    editor.on('connectionCreated', endConnecting);
+    document.addEventListener('mouseup', function () { setTimeout(endConnecting, 0); });
+    document.addEventListener('touchend', function () { setTimeout(endConnecting, 0); });
+
     let orthoMode = false;
     const origCreateCurvature = editor.createCurvature;
     editor.createCurvature = function (x1, y1, x2, y2, curvature, type) {

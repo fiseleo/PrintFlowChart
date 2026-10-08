@@ -241,9 +241,12 @@ body.dark #searchBox { background: #2a2a2a; color: #e6e6e6; border-color: #4a4a4
 .drawflow .drawflow-node .input:hover,
 .drawflow .drawflow-node .output:hover { border-color: var(--accent); background: #eaeff5; }
 
-/* 三通/四通閥：連接點定位
-   三通：左 = 入口(input_1)，上 = 出口1，右 = 出口2（入口必須是 .input，Drawflow 只能把線接到 input）
-   四通：上 = 入口1，左 = 入口2，下 = 出口1，右 = 出口2 */
+/* 三通/四通閥：雙向連接點
+   每個位置同時疊一個 input 與一個 output（Drawflow 只能從 output 拉線、只能接到 input）。
+   平常 output 在上層 → 從該點拉線；拉線中（.df-connecting）output 不接收滑鼠 → 放開時接到 input。
+   名稱沿用舊版位置，舊圖的線不會跑位：
+   三通：左 = input_1/output_3，上 = output_1/input_2，右 = output_2/input_3
+   四通：上 = input_1/output_3，左 = input_2/output_4，下 = output_1/input_3，右 = output_2/input_4 */
 .drawflow .drawflow-node.threeway .input,
 .drawflow .drawflow-node.threeway .output,
 .drawflow .drawflow-node.ball3l .input,
@@ -259,23 +262,46 @@ body.dark #searchBox { background: #2a2a2a; color: #e6e6e6; border-color: #4a4a4
   top: auto; right: auto; bottom: auto; left: auto;
 }
 .drawflow .drawflow-node.threeway .input.input_1,
+.drawflow .drawflow-node.threeway .output.output_3,
 .drawflow .drawflow-node.ball3l .input.input_1,
-.drawflow .drawflow-node.ball3t .input.input_1 { left: 0; top: 50%; transform: translate(-50%, -50%); }
+.drawflow .drawflow-node.ball3l .output.output_3,
+.drawflow .drawflow-node.ball3t .input.input_1,
+.drawflow .drawflow-node.ball3t .output.output_3 { left: 0; top: 50%; transform: translate(-50%, -50%); }
 .drawflow .drawflow-node.threeway .output.output_1,
+.drawflow .drawflow-node.threeway .input.input_2,
 .drawflow .drawflow-node.ball3l .output.output_1,
-.drawflow .drawflow-node.ball3t .output.output_1 { top: 0; left: 50%; transform: translate(-50%, -50%); }
+.drawflow .drawflow-node.ball3l .input.input_2,
+.drawflow .drawflow-node.ball3t .output.output_1,
+.drawflow .drawflow-node.ball3t .input.input_2 { top: 0; left: 50%; transform: translate(-50%, -50%); }
 .drawflow .drawflow-node.threeway .output.output_2,
+.drawflow .drawflow-node.threeway .input.input_3,
 .drawflow .drawflow-node.ball3l .output.output_2,
-.drawflow .drawflow-node.ball3t .output.output_2 { right: 0; top: 50%; transform: translate(50%, -50%); }
+.drawflow .drawflow-node.ball3l .input.input_3,
+.drawflow .drawflow-node.ball3t .output.output_2,
+.drawflow .drawflow-node.ball3t .input.input_3 { right: 0; top: 50%; transform: translate(50%, -50%); }
 
 .drawflow .drawflow-node.fourway .input.input_1,
-.drawflow .drawflow-node.ball4way .input.input_1 { top: 0; left: 50%; transform: translate(-50%, -50%); }
+.drawflow .drawflow-node.fourway .output.output_3,
+.drawflow .drawflow-node.ball4way .input.input_1,
+.drawflow .drawflow-node.ball4way .output.output_3 { top: 0; left: 50%; transform: translate(-50%, -50%); }
 .drawflow .drawflow-node.fourway .input.input_2,
-.drawflow .drawflow-node.ball4way .input.input_2 { left: 0; top: 50%; transform: translate(-50%, -50%); }
+.drawflow .drawflow-node.fourway .output.output_4,
+.drawflow .drawflow-node.ball4way .input.input_2,
+.drawflow .drawflow-node.ball4way .output.output_4 { left: 0; top: 50%; transform: translate(-50%, -50%); }
 .drawflow .drawflow-node.fourway .output.output_1,
-.drawflow .drawflow-node.ball4way .output.output_1 { bottom: 0; left: 50%; transform: translate(-50%, 50%); }
+.drawflow .drawflow-node.fourway .input.input_3,
+.drawflow .drawflow-node.ball4way .output.output_1,
+.drawflow .drawflow-node.ball4way .input.input_3 { bottom: 0; left: 50%; transform: translate(-50%, 50%); }
 .drawflow .drawflow-node.fourway .output.output_2,
-.drawflow .drawflow-node.ball4way .output.output_2 { right: 0; top: 50%; transform: translate(50%, -50%); }
+.drawflow .drawflow-node.fourway .input.input_4,
+.drawflow .drawflow-node.ball4way .output.output_2,
+.drawflow .drawflow-node.ball4way .input.input_4 { right: 0; top: 50%; transform: translate(50%, -50%); }
+
+.df-connecting .drawflow-node.threeway .output,
+.df-connecting .drawflow-node.ball3l .output,
+.df-connecting .drawflow-node.ball3t .output,
+.df-connecting .drawflow-node.fourway .output,
+.df-connecting .drawflow-node.ball4way .output { pointer-events: none; }
 
 .drawflow .connection .main-path { stroke: #3a3a3a; stroke-width: 1.5; marker-end: url(#arrow); }
 .drawflow .connection .main-path:hover { stroke: var(--accent); }
